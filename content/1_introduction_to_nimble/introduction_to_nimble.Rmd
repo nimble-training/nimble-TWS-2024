@@ -1,0 +1,502 @@
+---
+title: "Introduction to NIMBLE"
+subtitle: "TWS 2024 Workshop"
+author: "NIMBLE Development Team"
+date: "October 2024"
+output:
+  slidy_presentation: default
+  beamer_presentation: default
+---
+
+<style>
+slides > slide {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+library(nimble)
+library(coda)
+```
+
+# What Is NIMBLE?
+
+- A framework for hierarchical statistical models and methods.
+- An extension of the BUGS/JAGS language for:
+
+    - writing new functions and distributions using **nimbleFunctions**
+    - named alternative parameterizations (e.g. sd vs precision for `dnorm`).
+    - Additional R-like coding, including vectorized declarations.
+    
+- A configurable system for MCMC.
+- A model-generic programming system to write new analysis methods using (two-stage) nimbleFunctions.
+- A growing library of other methods.
+- A growing package ecosystem of other methods.
+- **N**umerical **I**nference for statistical **M**odels using **B**ayesian and **L**ikelihood **E**stimation.
+
+# The WinBUGS/OpenBUGS/JAGS language has made a huge impact on applied Bayesian statistics.
+
+![](img/BUGS_Books.png)
+
+# Methods in NIMBLE beyond basic MCMC:
+
+- Hamiltonian Monte Carlo (MCMC) (package *nimbleHMC*).
+- Sequential Monte Carlo (aka particle filtering) and Particle MCMC (package *nimbleSMC*).
+- Laplace approximation and adaptive Gauss-Hermite quadrature (for maximum likelihood, included in *nimble* for now, likely to be moved to separate package later).
+- Coming soon: methods related to Integrated Nested Laplace Approximation (INLA).
+- Monte Carlo Expectation Maximization (MCEM, for maximum liklihood) (included in *nimble*).
+- Reversible Jump MCMC (RJMCMC) for variable selection (included in *nimble*).
+- Marginal distributions for ecological models (capture-recapture, occupancy, dynamic occupancy, N-mixture, Hidden Markov models) (package *nimbleEcology*).
+- Functions and distributions for spatial capture-recapture (package *nimbleSCR*).
+- Conditional autoregressive (CAR) spatial models (included in *nimble*).
+- Bayesian non-parametric (BNP) distributions (included in *nimble*).
+- Non-stationary Gaussian processes (package *NSGP*).
+
+# First example: An occupancy model
+
+* AHM = [Applied Hierarchical Modeling in Ecology, Vol. I](https://www.mbr-pwrc.usgs.gov/pubanalysis/keryroylebook/) by Marc Kéry and J. Andrew Royle. 2015. Elsevier.
+* Most AHM examples have been converted to NIMBLE: [https://github.com/nimble-dev/AHMnimble](https://github.com/nimble-dev/AHMnimble)
+* Thanks to Marc Kéry, Andy Royle, and Mike Meredith for permission to post modified versions of their code on GitHub.
+* Occupancy example from section 10.4:
+
+    - Simulated data
+    - `M` sites.
+    - Each site is visited `J` times.
+    - `y[i, j]` is detection (`1`) or non-detection(`0`) for visit `j` to site `i`.
+    - Explanatory variables:
+
+        - `vegHt` = Vegetation height: logistic effect on occupancy probability
+        - `wind` = Wind speed: logistic effect on detection probability
+
+# Occupancy example: Load the package
+```{r}
+library(nimble)
+```
+
+# Occupancy example: Write the model code **in R**
+- Slightly modified from AHM.
+- Derived quantities are removed.
+```{r echo = TRUE}
+Section10p4_code <- nimbleCode({
+  # Priors
+  mean.p ~ dunif(0, 1)         # Detection intercept on prob. scale
+  alpha0 <- logit(mean.p)      # Detection intercept
+  alpha1 ~ dunif(-20, 20)      # Detection slope on wind
+  mean.psi ~ dunif(0, 1)       # Occupancy intercept on prob. scale
+  beta0 <- logit(mean.psi)     # Occupancy intercept
+  beta1 ~ dunif(-20, 20)       # Occupancy slope on vegHt
+  
+  # Likelihood
+  for (i in 1:M) {
+    # True state model for the partially observed true state
+    z[i] ~ dbern(psi[i])      # True occupancy z at site i
+    logit(psi[i]) <- beta0 + beta1 * vegHt[i]
+    for (j in 1:J) {
+      # Observation model for the actual observations
+      y[i,j] ~ dbern(p.eff[i,j])    # Detection-nondetection at i and j
+      p.eff[i,j] <- z[i] * p[i,j]   # 'straw man' for WinBUGS
+      logit(p[i,j]) <- alpha0 + alpha1 * wind[i,j]
+    }
+  }
+  # Derived quantities are removed.
+}
+)
+```
+
+# Occupancy example: Simulate data
+(This code is modified from AHM.  It is here for completeness.)
+```{r}
+DO_PLOT <- TRUE # Comment-out this line if you don't want the plots
+if(!exists("DO_PLOT"))
+  DO_PLOT <- FALSE
+# Choose sample sizes and prepare obs. data array y
+set.seed(1)                   # So we all get same data set
+M <- 100                      # Number of sites
+J <- 3                        # Number of presence/absence measurements
+y <- matrix(NA, nrow = M, ncol = J) # to contain the obs. data
+
+# Create a covariate called vegHt
+vegHt <- sort(runif(M, -1, 1)) # sort for graphical convenience
+
+# Choose parameter values for occupancy model and compute occupancy
+beta0 <- 0                    # Logit-scale intercept
+beta1 <- 3                    # Logit-scale slope for vegHt
+psi <- plogis(beta0 + beta1 * vegHt) # Occupancy probability
+# plot(vegHt, psi, ylim = c(0,1), type = "l", lwd = 3) # Plot psi relationship
+
+# Now visit each site and observe presence/absence perfectly
+z <- rbinom(M, 1, psi)        # True presence/absence
+
+# Look at data so far
+table(z)
+
+# Plot the true system state
+if(DO_PLOT) {
+  par(mfrow = c(1, 3), mar = c(5,5,2,2), cex.axis = 1.5, cex.lab = 1.5)
+  plot(vegHt, z, xlab="Vegetation height", ylab="True presence/absence (z)", frame = F, cex = 1.5)
+  plot(function(x) plogis(beta0 + beta1*x), -1, 1, add=T, lwd=3, col = "red")
+}
+
+# Create a covariate called wind
+wind <- array(runif(M * J, -1, 1), dim = c(M, J))
+
+# Choose parameter values for measurement error model and compute detectability
+alpha0 <- -2                        # Logit-scale intercept
+alpha1 <- -3                        # Logit-scale slope for wind
+p <- plogis(alpha0 + alpha1 * wind) # Detection probability
+# plot(p ~ wind, ylim = c(0,1))     # Look at relationship
+
+# Take J = 3 presence/absence measurements at each site
+for(j in 1:J) {
+  y[,j] <- rbinom(M, z, p[,j])
+}
+sum(apply(y, 1, max))               # Number of sites with observed presences
+
+# Plot observed data and true effect of wind on detection probability
+if(DO_PLOT) {
+  plot(wind, y, xlab="Wind", ylab="Observed det./nondetection data (y)", frame = F, cex = 1.5)
+  plot(function(x) plogis(alpha0 + alpha1*x), -1, 1, add=T, lwd=3, col = "red")
+}
+# Look at the data: occupancy, true presence/absence (z), and measurements (y)
+cbind(psi=round(psi,2), z=z, y1=y[,1], y2=y[,2], y3=y[,3])
+
+# Create factors
+time <- matrix(rep(as.character(1:J), M), ncol = J, byrow = TRUE)
+hab <- c(rep("A", 33), rep("B", 33), rep("C", 34))  # Must have M = 100
+
+# Bundle and summarize data set
+str( occupancy_data <- list(y = y, 
+                            vegHt = vegHt,
+                            wind = wind,
+                            M = nrow(y),
+                            J = ncol(y),
+                            XvegHt = seq(-1, 1, length.out=100),
+                            Xwind = seq(-1, 1, length.out=100)) )
+
+# Initial values: must give for same quantities as priors given !
+zst <- apply(y, 1, max)        # Avoid data/model/inits conflict
+occupancy_inits <- function(){
+  list(z = zst, 
+       mean.p = runif(1), 
+       alpha1 = runif(1), 
+       mean.psi = runif(1), 
+       beta1 = runif(1))
+}
+
+```
+
+Occupancy Example: One step to results with `nimbleMCMC`
+=====
+
+Start from:
+
+- code
+- constants + data
+- inits
+
+```{r}
+results <- nimbleMCMC(Section10p4_code,
+                       constants = occupancy_data,
+                       inits = occupancy_inits,
+                       niter = 10000,
+                       nburnin = 1000,
+                       nchains = 2,
+                       samplesAsCodaMCMC = TRUE,
+                       WAIC = TRUE)
+summary(results$samples) ## from coda
+results$WAIC
+```
+
+Occupancy Example: Look at results:
+=====
+
+There are many packages for summarizing and plotting MCMC samples.  NIMBLE does not try to re-invent these wheels.
+
+1. `mcmcplots`
+
+```{r eval = FALSE}
+library(mcmcplots)
+mcmcplot(results$samples, dir = ".", filename = "occupancy_samples_mcmcplot")
+```
+
+```{r echo=FALSE}
+library(mcmcplots)
+mcmcplot(results$samples, dir = ".", filename = "orig_occupancy_samples_mcmcplot")
+```
+
+Results that comes with these slides are [here](orig_occupancy_samples_mcmcplot.html).
+
+Results if you generated your own will be [here](occupancy_samples_mcmcplot.html).
+
+Some key points about NIMBLE's model language
+=====
+
+- *Nodes* and *variables*.
+- Order does not matter (it is a *declarative* language).
+- Distinction between `constants` and `data`.
+- Alternative parameterizations and named parameters (like R).
+- nimble might insert *lifted* nodes into your model.
+- Definition-time if-then-else (multiple model variants from the same code).
+- User-defined functions and distributions.
+- Centered vs uncentered random effects.
+- Factors: Nested indexing vs model matrix (with dummy variables).
+- Vectorized math and linear algebra
+- Future feature: model macros.
+
+Nodes and variables
+=====
+
+```{r eval = TRUE}
+code <- nimbleCode({
+  mu ~ dnorm(0, sd = 100)
+  sigma ~ dhalfflat()
+  for(i in 1:10) {
+    x[i] ~ dnorm(mu, sd = sigma)
+  }
+  for(i in 1:8) {
+    y[1:5, i] ~ ddirch(alpha[1:5])
+  }
+  # mean_y and cov_y assumed to be provided
+})
+model <- nimbleModel(code, calculate=FALSE)
+model$getVarNames()
+model$getNodeNames()
+```
+
+- Nodes are declared on the left-hand side of model code.
+- Nodes are vertices in the directed acyclic graph (DAG) of the model.
+- Variables are names containing one or more nodes.
+- `x` and `y` are **variables**.
+- `x[1]` ... `x[10]` and `y[1:5, 1]`... `y[1:5, 8]` are **nodes**.
+- `x[1:4]` and `y[1,1]` (e.g.) are **not nodes**.
+
+Order does not matter in model code
+=====
+
+Each line of code **declares** relationships among nodes.
+
+Relationships can be declared in any order.
+
+(Most programming is *imperative*, giving ordered sequences of steps. NIMBLE's model language is *declarative*, giving a set of relationships.)
+
+The following two pieces of model code are **equivalent**:
+
+```{r eval = FALSE}
+code <- nimbleCode({
+  # Code snippet only
+  mu ~ dnorm(0, sd = 100)
+  sigma ~ dhalfflat()
+  for(i in 1:10) {
+    x[i] ~ dnorm(mu, sd = sigma)
+  }
+```
+
+```{r eval = FALSE}
+nimbleCode({
+  # Code snippet only:
+  for(i in 1:10) {
+    x[i] ~ dnorm(mu, sd = sigma)
+  }
+  sigma ~ dhalfflat()
+  mu ~ dnorm(0, sd = 100)
+```
+
+Distinction between data and constants
+=====
+
+### Constants are values needed to define model relationships
+
+- Starting or ending of index ranges, like `N` in "`for(i in 1:N)`".
+- Constant index vectors like "`group`" in "`x[i] ~ dnorm(mu[group[i]], sd = sigma)`".
+- (If you provide an index vector in the `data` list instead of the `constants` list, nimble will think its value might change, and that will make calculations very inefficient. **Constant index vectors should be provided in the `constants` list, not the data list.** )
+- Constants must be provided when creating a model with `nimbleModel` (or calling `nimbleMCMC`).
+
+### Data represents a flag on the role a parameter (node) plays in the model
+
+- Stochastic nodes may be unobserved or observed (i.e. **data**).
+- Algorithms can handle data nodes as needed. e.g., data nodes won't be sampled in MCMC.
+- Data *values* can be changed. E.g. you could analyze multiple data sets with the same model object (without rebuilding and recompiling).
+- Data can be provided when calling `nimbleModel` or later.
+
+### Providing data and constants together.
+
+- Data and constants can be provided together **in the `constants` list**.
+- NIMBLE will usually disambiguate data when it is provided in the constants list.
+
+### What are covariates and other non-parameters/non-observations?
+
+- Covariates/predictors are neither parameters nor data in the sense of the likelihood.
+- Covariates/predictors can be provided via `constants` if you don't need to change them (often the case).
+- Covariates/predictors can be provided via `data` or `inits` if you want to change them.
+    - NIMBLE will not treat them as 'data nodes'.
+
+### Dimensions must always be written explicitly
+
+- Square brackets and commas indicate number of dimensions
+
+    - If `x` is 2-dimensional, use "`x[1:N,1:p] %*% beta[1:p]`" or "`x[,] %*% beta[]`", not "`x %*% beta"`
+    - "`x[,] %*% beta[]`" works if nimbleModel can determine the sizes from other declarations *or* if the `dimensions` argument is provided to `nimbleModel`. Example: "`dimensions = list(x = c(N, p))`".
+
+Alternative parameterizations and named parameters for distributions
+=====
+
+- Alternative parameterizations and named parameters are supported. E.g.
+
+    - `dnorm(mean = mu, sd = sigma)`
+    - `dnorm(mean = mu, var = sigma_squared)`
+    - `dnorm(mean = mu, tau = tau)` (tau = precision; *default*)
+
+- **Default parameterizations follow BUGS/JAGS, not R!** 
+
+- Distributions with alternative parameterizations are listed in Table 5.2 of [User Manual Section 5.2.4](https://r-nimble.org/html_manual/cha-writing-models.html#subsec:dists-and-functions)
+
+- In BUGS and JAGS, only "`dnorm(mu, tau)`" is supported, where `tau` is precision.
+
+NIMBLE might insert nodes into your model!
+=====
+
+These are called *lifted nodes*.
+
+### Example 1: Lifted nodes from reparameterization
+
+You give NIMBLE this:
+
+```{r, eval=TRUE}
+code <- nimbleCode({
+  tau <- 1e-6
+  x ~ dnorm(0, tau)
+})
+model <- nimbleModel(code, calculate=FALSE)
+model$getNodeNames()
+```
+
+* NIMBLE defaults to parameterizations from **WinBUGS/OpenBUGS/JAGS, not R**.
+* Default SD/Var/precision for `dnorm` is **precision** = 1/variance.
+* NIMBLE converts the above code to a *canonical* parameterization like this:
+
+```{r, eval=FALSE}
+nimbleCode({  
+  tau <- 1e-6
+  lifted_d1_over_sqrt_oPtau_cP <- 1/sqrt(tau) # a lifted node
+  mu ~ dnorm(0, sd = lifted_d1_over_sqrt_oPtau_cP)
+})
+```
+
+- `lifted_d1_over_sqrt_oPtau_cP` is a *lifted* node.
+
+### Example 2: Lifted nodes from expression arguments
+
+You give NIMBLE this:
+
+```{r, eval=FALSE}
+code <- nimbleCode({
+  for(i in 1:3) y[i] ~ dnorm(a + b*x[i], sd = sigma)
+})
+model <- nimbleModel(code, calculate=FALSE)
+model$getNodeNames()
+```
+
+It treats it like this:
+```{r, eval=FALSE}
+nimbleCode({
+  for(i in 1:3) {
+    lifted_a_plus_b_times_x_oBi_cB_L2[i] <- a + b*x[i] # lifted nodes
+    y ~ dnorm(lifted_a_plus_b_times_x_oBi_cB_L2[i], sd = sigma)
+  }})
+```
+
+- `lifted_a_plus_b_times_x_oBi_cB_L2[i]` is a *lifted* node.
+
+Definition-time if-then-else (multiple model variants from the same code).
+=====
+
+
+Future feature: model macros.
+=====
+
+
+User-defined functions and distributions
+=====
+
+What if we want to calculate the total (marginal) occupancy probability by summing over possible values of the latent state (`z[i]`)?
+
+We can write a distribution to do this (which in this case is provided in nimbleEcology).
+
+```{r, eval=FALSE}
+occCode2 <- nimbleCode({
+  # Priors
+  mean.p ~ dunif(0, 1)         # Detection intercept on prob. scale
+  alpha0 <- logit(mean.p)      # Detection intercept
+  alpha1 ~ dunif(-20, 20)      # Detection slope on wind
+  mean.psi ~ dunif(0, 1)       # Occupancy intercept on prob. scale
+  beta0 <- logit(mean.psi)     # Occupancy intercept
+  beta1 ~ dunif(-20, 20)       # Occupancy slope on vegHt
+  
+  # Likelihood
+  for (i in 1:M) {
+    # True state model for the partially observed true state
+    # z[i] ~ dbern(psi[i]) # WE WILL REMOVE THE LATENT STATE FROM THE MODEL
+    logit(psi[i]) <- beta0 + beta1 * vegHt[i]
+    # WE ADD A LIKELIHOOD FOR THE VECTOR OF DATA FROM ONE SITE
+    y[i, 1:J] ~ dOcc_v(probOcc = psi[i], probDetect = p[i, 1:J], len = J)
+    for (j in 1:J) {
+      # y[i,j] ~ dbern(p.eff[i,j])    # WE WILL USE A VECTOR DISTRIBUTION
+      # p.eff[i,j] <- z[i] * p[i,j]   # WE HAVE REMOVED z[i]
+     logit(p[i,j]) <- alpha0 + alpha1 * wind[i,j]
+    }
+  }
+}
+)
+```
+
+Centered vs uncentered random effects.
+=====
+
+Consider a random effect for `group` in a linear regression
+```{r, eval=FALSE}
+# Uncentered version
+# Random effects have mean = 0
+nimbleCode({
+  # Code snippets
+  # define normal random effects
+  sigma_group ~ dunif(0, 100)
+  for(i in 1:num_groups) b[i] ~ dnorm(0, sd = sigma_group)
+
+  # Use random effects in a regression model
+  alpha ~ dnorm(0, sd = 100)
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100)
+  for(i in 1:N) y[i] ~ dnorm(alpha + beta*x[i] + b[group[i]], sd = sigma)
+})
+
+# Centered version
+# Random effects have mean = alpha (intercept)
+nimbleCode({
+  # Code snippets
+  # define normal random effects
+  alpha ~ dnorm(0, sd = 100)
+   sigma_group ~ dunif(0, 100)
+  for(i in 1:num_groups) b[i] ~ dnorm(alpha, sd = sigma_group)
+
+  # Use random effects in a regression model
+  beta ~ dnorm(0, sd = 100)
+  sigma ~ dunif(0, 100)
+  for(i in 1:N) y[i] ~ dnorm(beta*x[i] + b[group[i]], sd = sigma)
+})
+
+Centered vs uncentered can affect mixing and efficiency.
+
+There is no best answer, so some suggest using MCMC samplers to do both ("interweaving"). nimble provides the "uncentered" sampler for this.
+```
+
+
+Factors: Nested indexing vs model matrix (with dummy variables).
+=====
+
+
+
+Vectorized math and linear algebra
+=====
+
