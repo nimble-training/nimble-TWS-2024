@@ -1,3 +1,12 @@
+.DS_Store
+.idea
+*.log
+tmp/
+
+# Cache files
+*_files
+figure
+
 # History files
 .Rhistory
 .Rapp.history
