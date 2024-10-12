@@ -1,0 +1,506 @@
+---
+title: "Customizing models and MCMCs"
+subtitle: "TWS 2024 Workshop"
+author: "NIMBLE Development Team"
+date: "October 2024"
+output:
+  slidy_presentation: default
+  beamer_presentation: default
+---
+
+<style>
+slides > slide {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+library(nimble)
+library(compareMCMCs)
+recalculate <- TRUE
+```
+
+Agenda for this module
+=====
+
+
+More about nimble's MCMC workflow
+=====
+
+![](img/nimble_basics.png)
+
+(Repeat AHM example setup if necessary)
+=====
+
+```{r}
+Section10p4_code <- nimbleCode({
+  # Priors
+  mean.p ~ dunif(0, 1)         # Detection intercept on prob. scale
+  alpha0 <- logit(mean.p)      # Detection intercept
+  alpha1 ~ dunif(-20, 20)      # Detection slope on wind
+  mean.psi ~ dunif(0, 1)       # Occupancy intercept on prob. scale
+  beta0 <- logit(mean.psi)     # Occupancy intercept
+  beta1 ~ dunif(-20, 20)       # Occupancy slope on vegHt
+  
+  # Likelihood
+  for (i in 1:M) {
+    # True state model for the partially observed true state
+    z[i] ~ dbern(psi[i])      # True occupancy z at site i
+    logit(psi[i]) <- beta0 + beta1 * vegHt[i]
+    for (j in 1:J) {
+      # Observation model for the actual observations
+      y[i,j] ~ dbern(p.eff[i,j])    # Detection-nondetection at i and j
+      p.eff[i,j] <- z[i] * p[i,j]   # 'straw man' for WinBUGS
+      logit(p[i,j]) <- alpha0 + alpha1 * wind[i,j]
+    }
+  }
+  # Derived quantities are removed.
+}
+)
+
+if(!exists("DO_PLOT"))
+  DO_PLOT <- FALSE
+# Choose sample sizes and prepare obs. data array y
+set.seed(1)                   # So we all get same data set
+M <- 100                      # Number of sites
+J <- 3                        # Number of presence/absence measurements
+y <- matrix(NA, nrow = M, ncol = J) # to contain the obs. data
+
+# Create a covariate called vegHt
+vegHt <- sort(runif(M, -1, 1)) # sort for graphical convenience
+
+# Choose parameter values for occupancy model and compute occupancy
+beta0 <- 0                    # Logit-scale intercept
+beta1 <- 3                    # Logit-scale slope for vegHt
+psi <- plogis(beta0 + beta1 * vegHt) # Occupancy probability
+# plot(vegHt, psi, ylim = c(0,1), type = "l", lwd = 3) # Plot psi relationship
+
+# Now visit each site and observe presence/absence perfectly
+z <- rbinom(M, 1, psi)        # True presence/absence
+
+# Look at data so far
+table(z)
+
+# Plot the true system state
+if(DO_PLOT) {
+  par(mfrow = c(1, 3), mar = c(5,5,2,2), cex.axis = 1.5, cex.lab = 1.5)
+  plot(vegHt, z, xlab="Vegetation height", ylab="True presence/absence (z)", frame = F, cex = 1.5)
+  plot(function(x) plogis(beta0 + beta1*x), -1, 1, add=T, lwd=3, col = "red")
+}
+
+# Create a covariate called wind
+wind <- array(runif(M * J, -1, 1), dim = c(M, J))
+
+# Choose parameter values for measurement error model and compute detectability
+alpha0 <- -2                        # Logit-scale intercept
+alpha1 <- -3                        # Logit-scale slope for wind
+p <- plogis(alpha0 + alpha1 * wind) # Detection probability
+# plot(p ~ wind, ylim = c(0,1))     # Look at relationship
+
+# Take J = 3 presence/absence measurements at each site
+for(j in 1:J) {
+  y[,j] <- rbinom(M, z, p[,j])
+}
+sum(apply(y, 1, max))               # Number of sites with observed presences
+
+# Plot observed data and true effect of wind on detection probability
+if(DO_PLOT) {
+  plot(wind, y, xlab="Wind", ylab="Observed det./nondetection data (y)", frame = F, cex = 1.5)
+  plot(function(x) plogis(alpha0 + alpha1*x), -1, 1, add=T, lwd=3, col = "red")
+}
+# Look at the data: occupancy, true presence/absence (z), and measurements (y)
+cbind(psi=round(psi,2), z=z, y1=y[,1], y2=y[,2], y3=y[,3])
+
+# Create factors
+time <- matrix(rep(as.character(1:J), M), ncol = J, byrow = TRUE)
+hab <- c(rep("A", 33), rep("B", 33), rep("C", 34))  # Must have M = 100
+
+# Bundle and summarize data set
+str( occupancy_data <- list(y = y, 
+                            vegHt = vegHt,
+                            wind = wind,
+                            M = nrow(y),
+                            J = ncol(y)))
+
+# Initial values: must give for same quantities as priors given !
+zst <- apply(y, 1, max)        # Avoid data/model/inits conflict
+occupancy_inits <- function(){
+  list(z = zst, 
+       mean.p = runif(1), 
+       alpha1 = runif(1), 
+       mean.psi = runif(1), 
+       beta1 = runif(1))
+}
+```
+
+
+Build a model with `nimbleModel`
+=====
+
+```{r}
+# Separate constants from data for better workflow.
+occupancy_constants <- occupancy_data[c('M','J')]
+occupancy_data2 <- occupancy_data[c('y','vegHt','wind')]
+occ_model <- nimbleModel(Section10p4_code,
+                         data = occupancy_data2,
+                         constants = occupancy_constants,
+                         inits = occupancy_inits()) # a list, not a function
+```
+
+Models as graphs
+=====
+
+- Ecologists and many statisticians speak of "hierarchical models".
+- Computer scientists and others sometimes speak of "graphical models".
+- A hierarchical model is typically a directed acyclic graph (DAG).
+
+NIMBLE models as objects
+=====
+When you create a NIMBLE model, it is an object in R.
+
+You can:
+
+- Get or set parameter or data values.
+- Determine graph relationships.
+- Calculate log probabilities.
+- Simulate (draw) from distributions.
+- More.
+
+Get and set values
+=====
+This is done in natural R syntax.
+```{r}
+occ_model$alpha1
+occ_model$y[1,]
+occ_model$alpha1 <- 0.5
+occ_model$alpha1
+```
+
+You can even change data *values*.
+
+This can be done with a compiled model (later) too.
+
+Get names of nodes in the graph
+=====
+```{r}
+occ_model$getNodeNames()
+```
+
+Get some types of nodes
+=====
+```{r}
+occ_model$getNodeNames(dataOnly = TRUE)
+```
+
+```{r}
+occ_model$getNodeNames(determOnly = TRUE)
+```
+
+```{r}
+occ_model$isData('y[1:5, 1:3]')
+occ_model$isData('alpha0')
+```
+
+Get node relationships
+=====
+
+"Dependencies" (or *dependents* or *children*) of "x'" are the nodes that depend on "x" (including itself), recursively, stopping at stochastic nodes.
+
+```{r}
+occ_model$getDependencies("psi[5]")
+occ_model$getDependencies("z[5]")
+```
+
+```{r}
+occ_model$getDependencies("beta0")
+```
+
+Why do node relationships matter?
+=====
+For typical MCMC samplers, `model$getDependencies('beta[1]')` returns the nodes that need to be calculated when doing an MCMC update (aka "sampling") for `beta[1]`.
+
+Results from `model$getDependencies` are in *topologically sorted* order:
+
+- If you calculate them in order, you'll get correct results.
+- E.g `p.eff[1, 1]` comes before `y[1, 1]`.
+
+Calculate log probabilities
+=====
+```{r}
+occ_model$calculate('y[50, 3]') # one log likelihood
+occ_model$calculate('y[1:50,]') # sum of log likelihoods
+occ_model$calculate('p.eff') # deterministic nodes return 0
+```
+
+"`model$calculate(nodes)`" calculates a vector of `nodes` in the order provided.
+
+- For deterministic nodes, the new value is put into the node.
+- For stochastic nodes, the new log probability value is stored.
+- The returned value is the sum of log probabilities. 
+- (Deterministic nodes not contributed to the sum of log probabilities.)
+
+Simulate!
+=====
+```{r}
+occ_model$simulate('alpha0') # one log likelihood
+occ_model$alpha0
+occ_model$alpha0 <- 0.5
+```
+
+Simulate will not over-write data values unless you include `includeData=TRUE`.
+
+"`model$simulate`" makes nimble a good tool for simulation studies.
+
+MCMC efficiency: mixing and computation time are both important
+=====
+
+Mixing refers to how well the MCMC explores the posterior ("target distribution").
+
+Computation time refers to the time taken by the MCMC.
+
+Efficiency = Effective sample size / computation time.
+
+Pace = 1/Efficiency
+
+**Do not get excited about an MCMC just because it runs quickly.**
+
+Sometimes fancy samplers are too slow to be worthwhile.
+
+We ignore setup time because it is less interesting.  We don't thin because it confuses comparisons.
+
+Let's look at the occupancy example.
+
+Package `compareMCMCs`
+=====
+
+Package `compareMCMCs` can manage the running and timing of a collection of MCMC methods in nimble or from other packages.
+
+Example: house martin state-space model
+=====
+
+This is from Bayesian Population Analysis (Kéry and Schaub).
+
+- House martin abundance estimates from 1990-2009
+- 6 additional years of posterior prediction are included
+- The model is density-independent.
+- There are no covariates.
+- Process noise and observation error and both normal on a log scale.
+- This is really simple but we'll pretend it isn't.
+
+Code and data
+=====
+```{r}
+martin_code <- nimbleCode({
+  # Priors and constraints
+  logN.est[1] ~ dnorm(5.6, 0.01)    # Prior for initial population size
+  mean.r ~ dnorm(1, 0.001)          # Prior for mean growth rate
+  sigma.proc ~ dunif(0, 1)          # Prior for sd of state process
+  sigma2.proc <- pow(sigma.proc, 2)
+  tau.proc <- pow(sigma.proc, -2)
+  sigma.obs ~ dunif(0, 1)           # Prior for sd of observation process
+  sigma2.obs <- pow(sigma.obs, 2)
+  tau.obs <- pow(sigma.obs, -2)
+  
+  # State process
+  for (t in 1:(T-1)){
+    r[t] ~ dnorm(mean.r, tau.proc)
+    logN.est[t+1] <- logN.est[t] + r[t]
+  }
+  
+  # Likelihood
+  # Observation process 
+  for (t in 1:T) {
+    y[t] ~ dnorm(logN.est[t], tau.obs)
+  }
+  
+  # Population sizes on real scale
+  for (t in 1:T) {
+    N.est[t] <- exp(logN.est[t])
+  }
+})
+
+# Code from BPA book:
+pyears <- 6 # Number of future years with predictions
+hm <- c(271, 261, 309, 318, 231, 216, 208, 226, 195, 226, 233, 209, 
+        226, 192, 191, 225, 245, 205, 191, 174, rep(NA, pyears))
+year <- 1990:(2009 + pyears)
+
+# Bundle data
+martin_data <- list(y = log(hm), T = length(year))
+## NIMBLE will handle y as data, T as a constant
+
+# Initial values
+martin_inits <- function(){
+  list(sigma.proc = runif(1, 0, 1), mean.r = rnorm(1),
+       sigma.obs = runif(1, 0, 1), 
+       logN.est = c(rnorm(1, 5.6, 0.1), 
+                    rep(NA, (length(year)-1))))
+}
+
+martin_model <- nimbleModel(martin_code,
+                            constants = martin_data, 
+                            inits = martin_inits())
+```
+
+Two ways to write a state-space model
+=====
+
+Two equivalent ways to write state-space models:
+
+1. Process-noises are random variables.  States are deterministic given process noises. 
+2. States are random variables.
+
+This model uses approach `1`.
+
+Think like a graph 1.
+=====
+
+What are the nodes in this model?
+
+```{r}
+martin_model$getNodeNames()
+```
+
+Think like a graph 2.
+=====
+
+What calculations are required to sample (or "update") `r[24]`?
+
+```{r}
+martin_model$getDependencies("r[24]")
+```
+
+Think like a graph 3.
+=====
+
+What calculations are required to sample `r[20]`?
+```{r}
+martin_model$getDependencies("r[20]")
+```
+
+What about `r[10]`?
+What calculations are required to sample `r[10]`?
+```{r}
+martin_model$getDependencies("r[10]")
+```
+
+Think like a graph 4.
+=====
+We see that writing a state-space model this way will be very computationally costly.  Sampling the process noise at each time requires re-calculation of the model for all subsequent times.
+
+Rewrite the model
+=====
+Here is a more efficient way to write a state-space model.
+
+```{r}
+martin_code_alt <- nimbleCode({
+  # Priors and constraints
+  logN.est[1] ~ dnorm(5.6, 0.01)       # Prior for initial population size
+  mean.r ~ dnorm(1, 0.001)             # Prior for mean growth rate
+  sigma.proc ~ dunif(0, 1)          # Prior for sd of state process
+  sigma2.proc <- pow(sigma.proc, 2)
+  tau.proc <- pow(sigma.proc, -2)
+  sigma.obs ~ dunif(0, 1)           # Prior for sd of observation process
+  sigma2.obs <- pow(sigma.obs, 2)
+  tau.obs <- pow(sigma.obs, -2)
+  
+  # Likelihood
+  # State process
+  for (t in 1:(T-1)) {
+    logN.est[t+1] ~ dnorm(logN.est[t] + mean.r, tau.proc)
+  }
+  
+  # Observation process
+  for (t in 1:T) {
+    y[t] ~ dnorm(logN.est[t], tau.obs)
+  }
+  
+  # Population sizes on real scale
+  for (t in 1:T) {
+    N.est[t] <- exp(logN.est[t])
+  }
+})
+martin_model_alt <- nimbleModel(martin_code_alt,
+                                constants = martin_data,
+                                inits = martin_inits())
+```
+
+Now we can see how this makes a lighter dependency structure:
+
+```{r}
+martin_model_alt$getDependencies('logN.est[24]')
+martin_model_alt$getDependencies('logN.est[20]')
+martin_model_alt$getDependencies('logN.est[10]')
+```
+
+Updating each latent state (now population size, not process noise) requires calculations only one time-step later.
+
+Compare performance
+=====
+```{r eval=recalculate}
+martin_orig <- compareMCMCs(
+  list(code = martin_code,
+       constants = martin_data,
+       inits = martin_inits()),
+  MCMCs = c("nimble"),
+  MCMCcontrol = list(niter = 100000,
+                     burnin = 10000)
+)
+martin_orig <- renameMCMC(martin_orig, "nimble_orig", "nimble")
+
+martin_alt <- compareMCMCs(
+  list(code = martin_code_alt,
+       constants = martin_data,
+       inits = martin_inits()),
+  MCMCs = c("nimble"),
+  MCMCcontrol = list(niter = 100000,
+                     burnin = 10000)
+)
+
+martin_alt <- renameMCMC(martin_alt, "nimble_alt", "nimble")
+```
+
+Look at results
+=====
+```{r echo=FALSE, eval=recalculate}
+make_MCMC_comparison_pages(c(martin_orig, martin_alt),
+                           dir = "martin_results_with_slides",
+                           modelName = "martin-state-space-model")
+```
+
+```{r include=FALSE, eval=recalculate}
+martin_alt$jags_alt$samples <- NULL
+martin_alt$nimble_alt$samples <- NULL
+saveRDS(martin_alt, file=file.path("martin_results_with_slides", "martin_alt.RDS"))
+```
+
+```{r eval=FALSE}
+make_MCMC_comparison_pages(c(martin_orig, martin_alt),
+                           dir = "martin_results-user",
+                           modelName = "martin-state-space-model")
+```
+
+Results generated with these slides are [here](martin_results_with_slides/martin-state-space-model.html)
+
+Results if you run it yourself are [here](martin_results_user/martin-state-space-model.html)
+
+We see:
+
+- JAGS is more efficient than nimble. We don't usually see this, but we do see it in models with lots of conjugacy (which is not usually the case).
+- The alternative version of the model is more efficient for both JAGS and nimble.
+- The worst-mixing parameters are the standard deviations (sigmas).
+
+Raw results
+=====
+We can see the raw material of the results like this:
+
+```{r include=FALSE}
+martin_alt <- readRDS(file.path("martin_results_with_slides", "martin_alt.RDS"))
+```
+
+```{r}
+martin_alt$jags_alt$metrics
+martin_alt$nimble_alt$metrics
+```
