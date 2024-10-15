@@ -20,7 +20,6 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 library(nimble)
 library(compareMCMCs)
 recalculate <- FALSE ## Switch to run the actual code.
-doMCMC <- TRUE
 ```
 
 Agenda for this module
@@ -30,11 +29,9 @@ Agenda for this module
 
 1. Building a model and running MCMC in NIMBLE.
 
-1. Trade-offs between mixing and compute time.
+1. Understanding how to efficiently program a model.
 
-1. How to configure samplers in NIMBLE to improve efficiency.
-
-1. Basic checks for convergence of the MCMC.
+1. How to configure samplers in NIMBLE.
 
 Bayes' law (conditional probability)
 =====
@@ -53,18 +50,18 @@ We are interested in the joint posterior distribution of the unknown variables (
 
 - $[\cdot]$ indicates probability density or mass.
 
-- Denominator is hard to calculate but it is a constant (generally a multivariate integral).
+- Denominator is hard to calculate but it is a constant (generally requires a high dimensional integration).
 
 - More often we want to know the marginal posterior distribution of each param or state, which is the integral of joint posterior distribution over all other states and params.
 
-- We will refer to the numerator = $[\mbox{data, states, params}]$ as the "model calculations."
+- Model calculations refer to the numerator, $[\mbox{data, states, params}]$.
 
 Why Markov chain Monte Carlo
 =====
 
-- MCMC is a method that avoids integration by sampling proportional to the posterior distribution for both the joint posterior and marginals.
+- MCMC is a method that avoids integration by sampling proportional to the joint posterior distribution.
 
-- Markov chain means that each new sample will only depend on the previous sample, and will have properties that should result in drawing samples from the posterior distribution.
+- Markov chain means that each new sample will only depend on the previous sample, and the chain will have properties that should result in generating samples from the posterior distribution.
 
 - Monte Carlo means that the Markov chain is constructed with random sampling.
 
@@ -84,16 +81,16 @@ lines(x, dnorm(x, mean = 5, sd = sqrt(2)), col = 'red')
 Gibbs (conjugate) samplers
 =====
 
-- Possible when we can write $[\theta_1 | \theta_F, Y]$ analytically.
+- Possible when we can write the full conditional posterior distribution, $[\theta_1 | \theta_F, Y]$, analytically.
 - This only works for particular (*conjugate*) prior-posterior combinations.
 - Despite sounding simple, there is some computational cost.
-- Both JAGS and nimble use conjugate samplers by default when available.
+- Both JAGS and NIMBLE use conjugate samplers by default when available.
 
 Example, $y \sim Poisson(\lambda)$ and $\lambda \sim \text{gamma}(1,1)$.
 ```{r}
   y <- rpois(100, 3)
-  post.sample <- rgamma(10000, 1 + sum(y), 1+100)
-  plot(density(post.sample), main ="")
+  post.lambda <- rgamma(10000, 1 + sum(y), 1+100) ## 10000 Gibbs samples for lambda.
+  plot(density(post.lambda), main ="")
 ```
 
 Adaptive Random-walk Metropolis-Hastings samplers
@@ -627,10 +624,21 @@ martin_alt$nimble_alt$metrics
 Mixing Check
 =====
 
-```{r}
-library(mcmcplots)
-mcmcplot(martin_alt$nimble_alt$samples)
+```{r, eval = recalculate, results = FALSE}
+martin_model_alt <- nimbleModel(martin_code_alt,
+                                constants = martin_data,
+                                inits = martin_inits())
+mcmc.out <- nimbleMCMC(model = martin_model_alt,
+                       niter = 30000, nchains = 3, nburnin = 10000)
+library(MCMCvis)
+MCMCtrace(object = mcmc.out,
+          pdf = TRUE, # no export to PDF
+          ind = TRUE, # separate density lines per chain
+          params = "sigma.proc", filename	= "img/sigma_default_trace.pdf", plot = FALSE)
 ```
+
+![](./img/sigma_default_trace.pdf){width=100% height=800}.
+
 
 Changing samplers to improve performance.
 =====
@@ -670,13 +678,13 @@ Modifying an MCMC configuration in `nimble`
 
 Let's replace RW (adaptive random-walk Metropolis-Hastings) samplers with slice samplers in the martins example.
 
-```{r, eval=doMCMC}
+```{r, eval = recalculate}
 # Make a fresh copy of the model
 # (in case code is used out of order in this doc).
 martin_model_copy <- martin_model_alt$newModel(replicate = TRUE)
 mcmcConf <- configureMCMC(martin_model_copy)
-p_slice <- c("sigma.proc")
-mcmcConf$printSamplers(p_slice, displayControlDefaults = TRUE)
+p_slice <- c("sigma.proc", "sigma.obs")
+mcmcConf$printSamplers(p_slice)
 mcmcConf$removeSamplers(p_slice)
 expanded_p_slice <- martin_model_copy$expandNodeNames(p_slice)
 expanded_p_slice
@@ -686,49 +694,12 @@ for(p in expanded_p_slice)
 mcmcConf$printSamplers(p_slice)
 mcmc <- buildMCMC(mcmcConf)
 compiled <- compileNimble(martin_model_copy, mcmc)
-samples <- runMCMC(compiled$mcmc, niter = 10000, nburnin = 1000)
-coda::effectiveSize(samples)[p_slice]
+mcmc.out.slice <- runMCMC(compiled$mcmc, niter = 30000, nchains = 3, nburnin = 10000)
+MCMCtrace(object = mcmc.out.slice,
+          pdf = TRUE, # no export to PDF
+          ind = TRUE, # separate density lines per chain
+          params = "sigma.proc", filename	= "img/sigma_slice_trace.pdf", plot = FALSE)
 ```
+![](./img/sigma_slice_trace.pdf){width=100% height=800}.
 
-
-```{r}
-## Let's see if we can improve mixing?
-mcmcdefs <- list(
-  sigma_slice = function(model) {
-    mcmcConf <- configureMCMC(model)
-    mcmcConf$removeSamplers(c('sigma.proc', 'sigma.obs'))
-    mcmcConf$addSampler(target = c('sigma.proc'),
-                        type = "slice")
-    mcmcConf$addSampler(target = c('sigma.obs'),
-                        type = "slice")
-    mcmcConf
-  },
-  sigma_log = function(model){
-    mcmcConf <- configureMCMC(model)
-    mcmcConf$removeSamplers(c('sigma.proc', 'sigma.obs'))
-    mcmcConf$addSampler(target = c('sigma.proc', 'sigma.obs'),
-                        type = "RW_block",
-                        control = list(log = TRUE))
-    mcmcConf
-  },
-  default = function(model){
-    mcmcConf <- configureMCMC(model)
-    mcmcConf
-  })
-martin_alt_sigma <- compareMCMCs(
-              modelInfo = list(model = martin_model_copy), 
-              MCMCcontrol = list(niter = 100000,
-                     burnin = 10000),
-              MCMCs = c("sigma_slice", "sigma_log", "default"),
-              nimbleMCMCdefs = mcmcdefs )
-
-make_MCMC_comparison_pages(martin_alt_sigma,
-                           dir = "martin_results-user",
-                           modelName = "martin-state-space-model-sigma")
-
-library(mcmcplots)
-mcmcplot(martin_alt_sigma$default$samples, dir = ".", filename = "statespace_samples_mcmcplot_default")
-mcmcplot(martin_alt_sigma$sigma_log$samples, dir = ".", filename = "statespace_samples_mcmcplot_slicesigma")
-mcmcplot(martin_alt_sigma$sigma_slice$samples, dir = ".", filename = "statespace_samples_mcmcplot_blocksigma")
-```
 

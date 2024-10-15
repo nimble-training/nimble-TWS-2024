@@ -16,6 +16,20 @@ All materials for the workshop will be in this GitHub repository. If you're fami
 
 This workshop will focus on the `nimble` R package, not on statistical methodology per se.  The material assumes attendees have basic knowledge of ecological statistical models such as capture-recapture, occupancy, N-mixture, and hidden Markov models. (We will not use all of those!) You will still be able to follow the workshop without this background, but the workshop is geared towards participants already familiar with these topics.
 
+## Tentative Schedule
+
+Tuesday October 22nd:
+
+1. (8:00 am - 8:50 am) Primer: Coding in the BUGS language (Optional)
+2. (9:00 am - 9:50 am) Introduction to NIMBLE: Basic concepts and workflows
+3. (10:00 am - 10:50 am) Comparing and customizing MCMC methods in NIMBLE
+4. (11:00 am - 12:00 pm) User-defined distributions and functions in models
+6. (12:00 pm - 1:00 pm) Break for lunch
+7. (1:00 pm - 1:50 pm) Strategies for improving MCMC
+8. (2:00 pm - 2:50 pm) Special modeling components and methods
+9. (3:00 pm - 3:50 pm) Laplace approximation and other numerical methods in NIMBLE
+10. (4:00 pm - 4:30 pm) Wrap up
+
 ## Help with NIMBLE
 
 The NIMBLE web site is [here](https://r-nimble.org).
