@@ -20,15 +20,15 @@ This workshop will focus on the `nimble` R package, not on statistical methodolo
 
 Tuesday October 22nd:
 
-1. (8:00 am - 8:50 am) Primer: Coding in the BUGS language (Optional)
+1. (8:00 am - 8:50 am) Primer (Optional): Coding in the NIMBLE model language (a dialect of the BUGS language)
 2. (9:00 am - 9:50 am) Introduction to NIMBLE: Basic concepts and workflows
 3. (10:00 am - 10:50 am) Comparing and customizing MCMC methods in NIMBLE
 4. (11:00 am - 12:00 pm) User-defined distributions and functions in models
 6. (12:00 pm - 1:00 pm) Break for lunch
 7. (1:00 pm - 1:50 pm) Strategies for improving MCMC
-8. (2:00 pm - 2:50 pm) Special modeling components and methods
+8. (2:00 pm - 2:50 pm) Special modeling components and methods (spatial, Bayesian non-parametrics, and reversible jump for variable selection)
 9. (3:00 pm - 3:50 pm) Laplace approximation and other numerical methods in NIMBLE
-10. (4:00 pm - 4:30 pm) Wrap up
+10. (4:00 pm - 4:50 pm) Writing new samplers and algorithms
 
 ## Help with NIMBLE
 
