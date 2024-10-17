@@ -135,7 +135,6 @@ respiratorydata_sp <- merge(x = GGHB.IG, y = respiratorydata, by.x = "IG",
 respiratorydata_sp <- spTransform(respiratorydata_sp,
                                   CRS("+proj=longlat +datum=WGS84 +no_defs"))
 
-# Here is some old figure code that doesn't seem to work anymore.
 if(FALSE) { 
   # This will produce an image on top of an OpenStreetMap webpage}
   library(leaflet)
@@ -143,7 +142,7 @@ if(FALSE) {
   map2 <- leaflet(data=respiratorydata_sp) %>%
     addPolygons(fillColor = ~colors(SMR), color="", weight=1,
                 fillOpacity = 0.7) %>%
-    addLegend(pal = colours, values = respiratorydata_sp@data$SMR, opacity = 1,
+    addLegend(pal = colors, values = respiratorydata_sp@data$SMR, opacity = 1,
               title="SMR") %>%
     addScaleBar(position="bottomleft")
   map2
