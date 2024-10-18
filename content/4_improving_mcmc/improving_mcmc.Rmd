@@ -148,17 +148,19 @@ mcmc <- buildMCMC(mcmcConf)
 compiled <- compileNimble(martin_model, mcmc)
 mcmc.out.log <- runMCMC(compiled$mcmc, niter = 30000, 
                           nchains = 3, nburnin = 10000, samplesAsCodaMCMC = TRUE)
-save(mcmc.out.log, file = "martin_results_with_slides/mcmc_output_log.Rda")
-```
-
-```{r, include = FALSE}
-library(coda)
-if(!recalculate)
-  load("martin_results_with_slides/mcmc_output_log.Rda")
 
 plot(mcmc.out.log[, c('sigma.proc', 'sigma.obs')])
 ```
 
+```{r, eval = recalculate, include = FALSE}
+png("martin_results_with_slides/mcmc_output_log.png")
+plot(mcmc.out.log[, c('sigma.proc', 'sigma.obs')])
+dev.off()
+```
+
+```{r, include = FALSE, eval = !recalculate}
+knitr::include_graphics("martin_results_with_slides/mcmc_output_log.png")
+```
 
 Modifying an MCMC configuration in `nimble`
 =====
@@ -177,15 +179,21 @@ mcmc <- buildMCMC(mcmcConf)
 compiled <- compileNimble(martin_model, mcmc)
 mcmc.out.slice <- runMCMC(compiled$mcmc, niter = 30000, 
                           nchains = 3, nburnin = 10000, samplesAsCodaMCMC = TRUE)
-save(mcmc.out.slice, file = "martin_results_with_slides/mcmc_output_slice.Rda")
-```
-
-```{r, include = FALSE}
-library(coda)
-if(!recalculate)
-  load("martin_results_with_slides/mcmc_output_slice.Rda")
 plot(mcmc.out.slice[, c('sigma.proc', 'sigma.obs')])
 ```
+
+
+```{r, eval = recalculate, include = FALSE}
+png("martin_results_with_slides/mcmc_output_slice.png")
+plot(mcmc.out.slice[, c('sigma.proc', 'sigma.obs')])
+dev.off()
+```
+
+```{r, include = FALSE, eval = !recalculate}
+knitr::include_graphics("martin_results_with_slides/mcmc_output_slice.png")
+```
+
+
 Modifying an MCMC configuration in `nimble`
 =====
 
@@ -202,14 +210,18 @@ mcmc <- buildMCMC(mcmcConf)
 compiled <- compileNimble(martin_model, mcmc)
 mcmc.out.block <- runMCMC(compiled$mcmc, niter = 30000, 
                           nchains = 3, nburnin = 10000, samplesAsCodaMCMC = TRUE)
-save(mcmc.out.block, file = "martin_results_with_slides/mcmc_output_block.Rda")
+plot(mcmc.out.block[, c('sigma.proc', 'sigma.obs')])
 ```
 
-```{r, include = FALSE}
-library(coda)
-if(!recalculate)
-  load("martin_results_with_slides/mcmc_output_block.Rda")
+
+```{r, eval = recalculate, include = FALSE}
+png("martin_results_with_slides/mcmc_output_block.png")
 plot(mcmc.out.block[, c('sigma.proc', 'sigma.obs')])
+dev.off()
+```
+
+```{r, include = FALSE, eval = !recalculate}
+knitr::include_graphics("martin_results_with_slides/mcmc_output_block.png")
 ```
 
 Hamiltonian Monte Carlo
@@ -223,14 +235,17 @@ hmc <- buildHMC(martin_model)
 cHMC <- compileNimble(hmc, project = martin_model)
 mcmc.out.hmc <- runMCMC(cHMC, niter = 30000, 
                           nchains = 3, nburnin = 10000, samplesAsCodaMCMC = TRUE)
-save(mcmc.out.hmc, file = "martin_results_with_slides/mcmc_output_hmc.Rda")
+plot(mcmc.out.hmc[, c('sigma.proc', 'sigma.obs')])
 ```
 
-```{r, include = FALSE}
-library(coda)
-if(!recalculate)
-  load("martin_results_with_slides/mcmc_output_hmc.Rda")
+```{r, eval = recalculate, include = FALSE}
+png("martin_results_with_slides/mcmc_output_hmc.png")
 plot(mcmc.out.hmc[, c('sigma.proc', 'sigma.obs')])
+dev.off()
+```
+
+```{r, include = FALSE, eval = !recalculate}
+knitr::include_graphics("martin_results_with_slides/mcmc_output_hmc.png")
 ```
 
 Marginalization
