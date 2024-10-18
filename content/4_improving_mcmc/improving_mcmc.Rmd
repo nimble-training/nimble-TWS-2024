@@ -23,6 +23,7 @@ has_rjags <- require(rjags)
 if(!has_rjags)
   warning("This Rmd file uses package rjags.  Sections using it will be skipped.")
 recalculate <- FALSE
+makeplot <- !recalculate
 ```
 
 Overview
@@ -158,8 +159,10 @@ plot(mcmc.out.log[, c('sigma.proc', 'sigma.obs')])
 dev.off()
 ```
 
-```{r, include = FALSE, eval = !recalculate}
-knitr::include_graphics("martin_results_with_slides/mcmc_output_log.png")
+
+```{r, echo = FALSE, out.width="80%"}
+if(makeplot) 
+  knitr::include_graphics("martin_results_with_slides/mcmc_output_log.png")
 ```
 
 Modifying an MCMC configuration in `nimble`
@@ -189,8 +192,9 @@ plot(mcmc.out.slice[, c('sigma.proc', 'sigma.obs')])
 dev.off()
 ```
 
-```{r, include = FALSE, eval = !recalculate}
-knitr::include_graphics("martin_results_with_slides/mcmc_output_slice.png")
+```{r, echo = FALSE, out.width="80%"}
+if(makeplot) 
+  knitr::include_graphics("martin_results_with_slides/mcmc_output_slice.png")
 ```
 
 
@@ -220,15 +224,17 @@ plot(mcmc.out.block[, c('sigma.proc', 'sigma.obs')])
 dev.off()
 ```
 
-```{r, include = FALSE, eval = !recalculate}
-knitr::include_graphics("martin_results_with_slides/mcmc_output_block.png")
+```{r, echo = FALSE, out.width="80%"}
+if(makeplot) 
+  knitr::include_graphics("martin_results_with_slides/mcmc_output_block.png")
 ```
+
 
 Hamiltonian Monte Carlo
 =====
 
 Let's consider Hamiltonian Monte Carlo (HMC). This will use automatic differentiation to sample the parameters.
-```{r, hmc}
+```{r, hmc, eval = recalculate}
 library(nimbleHMC)
 cmodel <- compileNimble(martin_model)
 hmc <- buildHMC(martin_model)
@@ -244,9 +250,12 @@ plot(mcmc.out.hmc[, c('sigma.proc', 'sigma.obs')])
 dev.off()
 ```
 
-```{r, include = FALSE, eval = !recalculate}
-knitr::include_graphics("martin_results_with_slides/mcmc_output_hmc.png")
+
+```{r, echo = FALSE, out.width="80%"}
+if(makeplot) 
+  knitr::include_graphics("martin_results_with_slides/mcmc_output_hmc.png")
 ```
+
 
 Marginalization
 =====
@@ -319,6 +328,18 @@ samples <- runMCMC(Cmcmc, niter=15000, nchains=3,
                   nburnin = 5000, samplesAsCodaMCMC = TRUE)
 plot(samples[, 'p'])
 ```
+```{r, eval = recalculate, include = FALSE}
+png("martin_results_with_slides/mcmc_output_occ_basic.png")
+plot(samples[, 'p'])
+dev.off()
+```
+
+
+```{r, echo = FALSE, out.width="80%"}
+if(makeplot) 
+  knitr::include_graphics("martin_results_with_slides/mcmc_output_occ_basic.png")
+```
+
 
 Mixture Models
 =====
@@ -350,6 +371,17 @@ samples.mix <- runMCMC(Cmcmc, niter=15000, nchains=3,
                        nburnin = 5000, samplesAsCodaMCMC = TRUE)
 plot(samples.mix[, c('p[1]', 'p[2]', 'p[3]')])
 ```
+```{r, eval = recalculate, include = FALSE}
+png("martin_results_with_slides/mcmc_output_occ_mix.png")
+plot(samples.mix[, c('p[1]', 'p[2]', 'p[3]')])
+dev.off()
+```
+
+```{r, echo = FALSE, out.width="80%"}
+if(makeplot) knitr::include_graphics("martin_results_with_slides/mcmc_output_occ_mix.png")
+```
+
+
 
 Marginalization of the Mixture Model
 =====
@@ -419,6 +451,17 @@ samples.marg <- runMCMC(Cmcmc, niter=15000, nchains=3,
                        nburnin = 5000, samplesAsCodaMCMC = TRUE)
 plot(samples.marg[, c('p[1]', 'p[2]', 'p[3]')])
 ```
+
+```{r, eval = recalculate, include = FALSE}
+png("martin_results_with_slides/mcmc_output_occ_marg.png")
+plot(samples.marg[, c('p[1]', 'p[2]', 'p[3]')])
+dev.off()
+```
+
+```{r, echo = FALSE, out.width="80%"}
+if(makeplot) knitr::include_graphics("martin_results_with_slides/mcmc_output_occ_marg.png")
+```
+
 
 Bonus Writing your own sampler
 =====
