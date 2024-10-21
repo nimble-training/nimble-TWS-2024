@@ -1,0 +1,217 @@
+---
+title: "Other Methods in NIMBLE"
+subtitle: "NIMBLE 2024 TWS Workshop"
+author: "NIMBLE Development Team"
+date: "October 2024"
+output:
+  slidy_presentation: default
+  html_document:
+    code_folding: show
+---
+<style>
+slides > slide {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+</style>
+
+```{r setup, include=FALSE}
+library(nimble)
+library(nimbleEcology)
+has_rjags <- require(rjags)
+if(!has_rjags)
+  warning("This Rmd file uses package rjags.  Sections using it will be skipped.")
+recalculate <- FALSE
+makeplot <- !recalculate
+```
+
+Laplace approximation
+====
+
+- Laplace approximation (LA) is a fast method (often accurate) for approximating definite integrals.
+- In statistics, LA is often used to approximate marginal likelihoods / posterior distributions
+- When we have random effects, one way to perform maximum likelihood is to marginalize (integrate) out the random effects.
+- The problem LA aims to solve is to marginalize a density of observed and latent variables, $\mathbf{y}$ and $\mathbf{u}$,
+
+$$
+\tag{1}
+[\mathbf{y}|\boldsymbol{\theta}] = \int [\mathbf{y}, \mathbf{u} | \boldsymbol{\theta}] d\mathbf{u} \approx
+\frac{[\mathbf{y},\widehat{\mathbf{u}} | \boldsymbol{\theta}]}{g(\mathbf{\widehat{u}}|\mathbf{y}, \boldsymbol{\theta})},
+$$
+where 
+
+- $\boldsymbol{\theta}$: a vector of model parameters (e.g. variance)
+- $\mathbf{u}$: a vector of random effects
+- $\mathbf{y}$: a vector of data
+- $\widehat{\mathbf{u}}$: MLE of random effects for a given value of $\boldsymbol{\theta}$
+- $g(\mathbf{\widehat{u}}|\boldsymbol{\theta})$: is a Gaussian approximation of the random effects evaluated at their mean.
+ 
+
+Laplace approximation
+====
+
+We see Laplace approximation used in software such as 
+
+- INLA
+- TMB
+- glmmTMB
+- lmer
+- and many more.
+
+Laplace in glmmTMB
+====
+
+Consider the `data(ChickWeight)` example where we take repeated measurements over time of chicks and track their weight. If we use the R package `glmmTMB` we can fit this as a linear mixed model.
+
+For comparability with nimble we will not use restricted maximum likelihood (REML) for fitting the variance terms.
+
+```{r}
+data(ChickWeight)
+library(glmmTMB)
+
+fit.glmmtmb <- glmmTMB(weight ~ Time + Diet + (1|Chick), data = ChickWeight, REML = FALSE)
+summary(fit.glmmtmb)
+```
+
+Laplace in NIMBLE
+====
+
+- In NIMBLE, an LA algorithm can be built using **`buildLaplace`** as follows:
+```{r,eval = FALSE }
+laplace <- buildLaplace(model, # model object, the only compulsory input
+                        paramNodes, # top-level stochastic nodes
+                        randomEffectsNodes, # latent variables
+                        calcNodes, # random effects and dependencies + necessary deterministic nodes
+                        calcNodesOther, # data nodes depending only on params, i.e. y*
+                        control = list() # Additional settings, e.g. inner optimiser, checking, Laplace split etc
+                        )
+```
+- Compile the algorithm:
+```{r, eval = FALSE}
+Claplace <- compileNimble(laplace, project = model)
+```
+- Run it:
+```{r, eval = FALSE}
+res <- runLaplace(laplace, # Laplace algorithm
+                  pStart,  # Start value for MLE
+                  method = "BFGS",               # Outer optimisation method
+                  originalScale = TRUE,          # Scale of MLE results: original or transformed (unconstrained)
+                  randomEffectsStdError = TRUE,  # Return std. error of random effects?
+                  jointCovariance = FALSE        # Return joint covariance matrix of params and random effects?
+                  )
+```
+
+Build LMM in NIMBLE
+====
+
+```{r, eval = FALSE}
+lmm <- nimbleCode({
+  
+  for( i in 1:nbeta ) beta[i] ~ dflat()
+  
+  sigma ~ dhalfflat()
+  sigma_re ~ dhalfflat()
+  
+  for( i in 1:nchicks ){
+    re[i] ~ dnorm(0, sd = sigma_re)
+  }
+  
+  for( i in 1:n ){
+    mu[i] <- sum(X[i,1:nbeta] * beta[1:nbeta]) + re[Chick[i]]
+    weight[i] ~ dnorm(mu[i], sd = sigma)
+  }
+  
+})
+
+X <- model.matrix(~Time + factor(Diet), data = ChickWeight)
+chick_constants <- list(n = nrow(ChickWeight),
+    nbeta = ncol(X), 
+    X = X, 
+    nchicks = max(as.integer(ChickWeight$Chick)), 
+    Chick = as.integer(ChickWeight$Chick))
+
+chick_inits <- function(){
+  list(sigma = rgamma(1,5,2), sigma_re = rgamma(1, 0.5, 2), re = rnorm(chick_constants$nchicks), beta = rnorm(chick_constants$nbeta))
+}
+
+model <- nimbleModel(lmm, 
+                      data = list(weight = ChickWeight$weight), 
+                      constants = chick_constants,
+                      inits = chick_inits(), buildDerivs = TRUE)
+cmodel <- compileNimble(model)
+
+laplace <- buildLaplace(model)
+claplace <- compileNimble(laplace, project = model)
+res <- runLaplace(claplace)
+
+res$summary$params[grepl("beta", rownames(res$summary$params)),]
+```
+Some notes about NIMBLE Laplace
+====
+
+- Input nodes (except for model code) for Laplace, if not provided or only partially provided, will be decided by **`setupMargNodes`**; see `help("setupMargNodes")`.
+
+- The automatic decision process should be perfect in most cases, but not always. For example, for state-space models the initial state will be treated as a parameter, not random effect. Nead to provide the arguments manually.
+
+- One useful feature is the split of Laplace approximation (set `control = list(split = TRUE)` for `buildLaplace` or `split = TRUE` for `setupMargNodes`).
+
+- For easier (better?) optimisation (both inner and outer), we apply automatic transformations to constrained parameter and/or random effects nodes; see `help("parameterTransform")`. 
+
+- A very recent feature is that `nimOptim` can incorporate additional optimisation methods (e.g. those in `nlminb`). For Laplace, set the inner optimiser using `control = list(innerOptimMethod = "nlminb")` in `buildLaplace`. 
+
+```{r, eval = FALSE}
+claplace$updateSettings(innerOptimMethod = "nlminb", useInnerCache = FALSE)
+fit.nlminb <- claplace$findMLE(method = "nlminb", hessian = FALSE)
+fit.nlminb$par
+```
+
+Additional Options
+====
+
+**Option: integrate out all latent states (`'re[1:50]'`) and use MCMC for parameters only (`'beta'`, `'sigma', 'sigma_re'`)**
+
+- Write a custom log-likelihood function
+```{r, eval=FALSE}
+llFun_Laplace <- nimbleFunction(
+  setup = function(model, paramNodes, randomEffectsNodes, calcNodes) {
+    laplace <- buildLaplace(model, paramNodes, randomEffectsNodes, calcNodes)
+  },
+  run = function() {
+    pvals <- values(model, paramNodes)
+    ll <- laplace$calcLaplace(pvals)
+    returnType(double())
+    return(ll)
+  }
+)
+randomEffectsNodes <- "re[1:50]"
+paramNodes <- c("beta", "sigma", "sigma_re")
+calcNodes <- model$getDependencies(randomEffectsNodes)
+## Generate the custom log-likelihood function for MCMC
+Rll_Laplace <- llFun_Laplace(model, paramNodes, randomEffectsNodes, calcNodes)
+```
+- Specify a `RW_llFunction` sampler for parameter nodes `'sigma'`, `'sigma_re'` and `'beta'`.
+
+```{r, eval=FALSE}
+mcmcConf <- configureMCMC(model, nodes = NULL)
+paramNodes <- model$expandNodeNames(paramNodes, returnScalarComponents = TRUE)
+for(tarNode in paramNodes){
+  mcmcConf$addSampler(target = tarNode, type = "RW_llFunction",
+                      control = list(llFunction = Rll_Laplace, includesTarget = FALSE))
+}
+mcmc <- buildMCMC(mcmcConf)
+cmcmc <- compileNimble(mcmc)
+fit.mcmc <- runMCMC(cmcmc, niter = 10000, 
+                          nchains = 3, nburnin = 5000, samplesAsCodaMCMC = TRUE)
+plot(fit.mcmc[,c('beta[1]', 'beta[2]')])
+```
+
+
+Some notes about Laplace within MCMC
+====
+
+- The code to set this up seems a bit but most of the code could be copy-pasted.
+- You will need to have a good understanding of your model structure to specify the approximate custom likelihood. 
+- The `RW_llFunction` sampler in NIMBLE is a random-walk sampler using custom likelihood (Laplace here) instead of using `model$calculate()`; the multivariate version is `RW_llFunction_block`.
+- Other samplers using Laplace/other custom likelihood functions could be set up similarly but will need you to modify the original samplers' code.
+- Evaluating a single Laplace approximation is not expensive, but it is a different story when being involved in MCMC running a large number of iterations. Thus the MCMC+Laplace workflow would be ideal for models with high-dimensional and complex random effects structures.
+

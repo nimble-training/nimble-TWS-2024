@@ -463,5 +463,93 @@ if(makeplot) knitr::include_graphics("martin_results_with_slides/mcmc_output_occ
 ```
 
 
-Bonus Writing your own sampler
+Writing your own sampler (Bonus if time allows)
 =====
+
+Consider a very basic linear regression of cars data in R, where distance depends on speed.
+
+```{r, eval = FALSE}
+## Understanding MCMC with Nimble:
+code <- nimbleCode({
+  ## Choose priors:
+  b0 ~ dflat() # dunif(-Inf, Inf) flat prior for intercept.
+  b1 ~ dnorm(0, tau = 0.1)  # vague prior for slope.
+  sigma ~ dunif(0, 100) # flat prior for residual standard error. dhalfflat() also works.
+  
+  for( i in 1:n ) {
+    mu[i] <- b0 + b1*speed[i]
+    dist[i] ~ dnorm(mu[i], sd = sigma)
+  }
+})
+
+data <- 
+inits <- list(b0 = 0, b1 = 3, sigma = 3)
+constants <- list(n = nrow(cars), speed = cars$speed)
+
+model <- nimbleModel(code = code, 
+                     data = list(dist = cars$dist), 
+                     constants = list(n = nrow(cars), speed = cars$speed),                      inits = list(b0 = rnorm(1), b1 = rnorm(1), sigma = rgamma(1,1)))
+
+cmodel  <- compileNimble(model)
+## Build the MCMC
+mcmc    <- buildMCMC(model, monitors = c("b0",  "b1", "sigma")) ## Track key parameters
+## Compile the MCMC samplers into C++
+cmcmc   <- compileNimble(mcmc, project = model)
+
+## Now run some iterations of the MCMC
+cmcmc$run(1000)
+samples <- as.matrix(cmcmc$mvSamples)
+out <- as.mcmc(samples)
+
+plot(out[,'b0'])
+```
+
+Now let's write our own Metropolis Hastings sampler to provide to our MCMC.
+
+```{r, eval = FALSE}
+My_RW_sampler <- nimbleFunction(
+    contains = sampler_BASE,
+    setup = function(model, mvSaved, target, control) {
+        scale <- control$scale
+        calcNodes <- model$getDependencies(target)
+    },
+    run = function() {
+        currentValue <- model[[target]]
+        currentLogProb <- model$getLogProb(calcNodes)
+        
+        proposedValue <- currentValue + rnorm(1, 0, sd = scale)
+        model[[target]] <<- proposedValue
+        proposalLogProb <- model$calculate(calcNodes)
+        
+        log_accept_prob <- proposalLogProb - currentLogProb
+        
+        ## Equivalent to: accept <- runif(1) < exp(log_accept_prob)
+        accept <- decide(log_accept_prob) 
+        
+        if(accept) {
+            ## return new model (saved when running "calculate")
+            copy(from = model, to = mvSaved, row = 1, nodes = calcNodes, logProb = TRUE)
+        } else {
+            ## return original model (saved before updating)
+            copy(from = mvSaved, to = model, row = 1, nodes = calcNodes, logProb = TRUE)
+        }    
+    },
+    ## Ignore this for now.
+    methods = list(reset = function() {
+    })    
+)
+
+## Let's add it to the MCMC
+mcmcConf <- configureMCMC(model)
+mcmcConf$removeSamplers('b0')
+mcmcConf$addSampler(target = 'b0', type = 'My_RW_sampler', control = list(scale = 1.2))
+mcmcConf$printSamplers('b0')
+mcmc <- buildMCMC(mcmcConf, monitors = c("b0",  "b1", "sigma")) ## Track key parameters
+cmcmc   <- compileNimble(mcmc, project = model, resetFunctions = TRUE)
+
+## Now run some iterations of the MCMC
+cmcmc$run(1000)
+samples <- as.matrix(cmcmc$mvSamples)
+out <- as.mcmc(samples)
+plot(out[,'b0'])
+```
