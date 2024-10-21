@@ -607,8 +607,19 @@ of:</p>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10</span>)</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>),</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y, <span class="at">x =</span> x))</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>y</span></code></pre></div>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y, <span class="at">x =</span> x))</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Running calculate on model
+##   [Note] Any error reports that follow may simply reflect missing values in model variables.</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>y</span></code></pre></div>
+<pre><code>##  [1]  1.51178117  0.38984324 -0.62124058 -2.21469989  1.12493092 -0.04493361
+##  [7] -0.01619026  0.94383621  0.82122120  0.59390132</code></pre>
 </div>
 <div id="simulating-and-fitting-data" class="slide section level1">
 <h1>Simulating and fitting data</h1>
@@ -616,38 +627,53 @@ of:</p>
 worked examples of all cases. But here is how you can simulate data and
 then fit it with MCMC for any case.</p>
 <p>Simulate new data:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;slope&#39;</span>,<span class="st">&#39;intercept&#39;</span>,<span class="st">&#39;sigma&#39;</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> linear_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>intercept <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>slope <span class="ot">&lt;-</span> <span class="fl">0.7</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>sigma <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes, <span class="at">includeData =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>y</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;slope&#39;</span>,<span class="st">&#39;intercept&#39;</span>,<span class="st">&#39;sigma&#39;</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> linear_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>intercept <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>slope <span class="ot">&lt;-</span> <span class="fl">0.7</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>sigma <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes, <span class="at">includeData =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>linear_model<span class="sc">$</span>y</span></code></pre></div>
+<pre><code>##  [1] 4.837176 5.363191 4.437429 5.519891 5.416603 4.408834 5.294462 5.075602
+##  [9] 5.259602 4.911611</code></pre>
 <p>Fit the model</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(<span class="at">model =</span> linear_model)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(samples)</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(<span class="at">model =</span> linear_model)</span></code></pre></div>
+<pre><code>## Compiling
+##   [Note] This may take a minute.
+##   [Note] Use &#39;showCompilerOutput = TRUE&#39; to see C++ compilation details.</code></pre>
+<pre><code>## running chain 1...</code></pre>
+<pre><code>## |-------------|-------------|-------------|-------------|
+## |-------------------------------------------------------|</code></pre>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(samples)</span></code></pre></div>
+<pre><code>##    intercept         sigma            slope        
+##  Min.   :4.516   Min.   :0.1140   Min.   :-0.1682  
+##  1st Qu.:4.943   1st Qu.:0.1997   1st Qu.: 0.3717  
+##  Median :4.995   Median :0.2398   Median : 0.4399  
+##  Mean   :4.995   Mean   :0.2564   Mean   : 0.4397  
+##  3rd Qu.:5.047   3rd Qu.:0.2942   3rd Qu.: 0.5080  
+##  Max.   :5.742   Max.   :0.8950   Max.   : 1.0798</code></pre>
 <p>An alternative if you are not simulating data is to skip building the
 model and let <code>nimbleMCMC</code> do that, like this:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(linear_model_code,</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>                      <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>),</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y, <span class="at">x =</span> x))</span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">nimbleMCMC</span>(linear_model_code,</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>                      <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">10</span>),</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y, <span class="at">x =</span> x))</span></code></pre></div>
 </div>
 <div id="handling-non-normal-data-and-associated-link-functions" class="slide section level1">
 <h1>Handling non-normal data and associated link functions</h1>
 <p>Option 1:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleCode</span>({</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Incomplete code snippet</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    logit_y[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope<span class="sc">*</span>x[i]</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dbern</span>(<span class="fu">expit</span>(logit_y[i])) <span class="co"># Bernoulli distribution</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleCode</span>({</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Incomplete code snippet</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    logit_y[i] <span class="ot">&lt;-</span> intercept <span class="sc">+</span> slope<span class="sc">*</span>x[i]</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dbern</span>(<span class="fu">expit</span>(logit_y[i])) <span class="co"># Bernoulli distribution</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
 <p>Option 2:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleCode</span>({</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Incomplete code snippet</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(y[i]) <span class="sc">~</span> <span class="fu">dbern</span>(intercept <span class="sc">+</span> slope<span class="sc">*</span>x[i])</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nimbleCode</span>({</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Incomplete code snippet</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(y[i]) <span class="sc">~</span> <span class="fu">dbern</span>(intercept <span class="sc">+</span> slope<span class="sc">*</span>x[i])</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
 <p>(Internally, nimble will turn the second version into the first
 version.)</p>
 </div>
@@ -658,21 +684,30 @@ each level.</p>
 <p>Say we want a different intercept for each level (group).</p>
 <h3 id="option-1-nested-indexing">Option 1: Nested indexing</h3>
 <p>Setup:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>group <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>)</span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">12</span>)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">12</span>)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    intercept[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># vague priors</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept[group[i]] <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>group <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>,<span class="dv">3</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">12</span>)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">12</span>)</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    intercept[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># vague priors</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept[group[i]] <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Running calculate on model
+##   [Note] Any error reports that follow may simply reflect missing values in model variables.</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
 <p><strong>It is important to put <code>groups</code> in
 <code>constants</code>, not <code>data</code></strong>.</p>
 </div>
@@ -683,22 +718,44 @@ variables and model matrix</h3>
 <p>We will also include <code>x</code> in the model matrix.</p>
 <p>Somehow make a matrix of dummy variables. I’ll do it with
 <code>model.matrix</code></p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(y <span class="sc">~</span> x <span class="sc">+</span> <span class="fu">as.factor</span>(group) <span class="sc">-</span> <span class="dv">1</span>)</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attributes</span>(X) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(X) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">12</span>, <span class="dv">4</span>)</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>X</span></code></pre></div>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    beta[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># vague priors</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  predicted_y[<span class="dv">1</span><span class="sc">:</span>N] <span class="ot">&lt;-</span> (X[<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>] <span class="sc">%*%</span> beta[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>])[,<span class="dv">1</span>]</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(predicted_y[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">X =</span> X),</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(y <span class="sc">~</span> x <span class="sc">+</span> <span class="fu">as.factor</span>(group) <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">attributes</span>(X) <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(X) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">12</span>, <span class="dv">4</span>)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>X</span></code></pre></div>
+<pre><code>##               [,1] [,2] [,3] [,4]
+##  [1,] -0.709637577    1    0    0
+##  [2,] -0.012988549    1    0    0
+##  [3,]  0.709701895    1    0    0
+##  [4,]  0.006829805    1    0    0
+##  [5,] -1.916725824    0    1    0
+##  [6,]  0.687431510    0    1    0
+##  [7,]  0.210818875    0    1    0
+##  [8,]  0.101061850    0    1    0
+##  [9,]  0.617865118    0    0    1
+## [10,] -0.786924801    0    0    1
+## [11,]  0.204324664    0    0    1
+## [12,]  0.188451475    0    0    1</code></pre>
+<div class="sourceCode" id="cb33"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>    beta[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># vague priors</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  predicted_y[<span class="dv">1</span><span class="sc">:</span>N] <span class="ot">&lt;-</span> (X[<span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>] <span class="sc">%*%</span> beta[<span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>])[,<span class="dv">1</span>]</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(predicted_y[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">X =</span> X),</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Running calculate on model
+##   [Note] Any error reports that follow may simply reflect missing values in model variables.</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
 <p><strong>Option 1</strong> and <strong>Option 2</strong> are
 statistically equivalent but may (will) give different performance in
 algorithms. For example, MCMCs will be able to do fewer calculations
@@ -718,58 +775,85 @@ with the addition of a shared prior.</p>
 <strong>uncentered</strong> (or “partially” centered).</p>
 <p>Let’s say we want the <code>group</code> effects above to be random
 effects. We’ll use Option 1 and uncentered random effects.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  sigma_beta <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#illustrate improper uninformative prior for &gt;0.</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    group_effect[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_beta)</span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept <span class="sc">+</span> group_effect[group[i]] <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  sigma_beta <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#illustrate improper uninformative prior for &gt;0.</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>    group_effect[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_beta)</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept <span class="sc">+</span> group_effect[group[i]] <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Running calculate on model
+##   [Note] Any error reports that follow may simply reflect missing values in model variables.</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
 </div>
 <div id="random-effects-continued" class="slide section level1">
 <h1>Random effects (continued)</h1>
 <p>Here is a <strong>centered</strong> version of the above example.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  sigma_beta <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#illustrate improper uninformative prior for &gt;0.</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    group_effect[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept, <span class="at">sd =</span> sigma_beta)</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(group_effect[group[i]] <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<div class="sourceCode" id="cb47"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>  sigma_beta <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#illustrate improper uninformative prior for &gt;0.</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>    group_effect[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept, <span class="at">sd =</span> sigma_beta)</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(group_effect[group[i]] <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
+<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
+<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Running calculate on model
+##   [Note] Any error reports that follow may simply reflect missing values in model variables.</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
 </div>
 <div id="random-effects-continued-1" class="slide section level1">
 <h1>Random effects (continued)</h1>
 <p>And here is a fully uncentered version. (The first version might be
 called “partially” centered.)</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  sigma_beta <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#illustrate improper uninformative prior for &gt;0.</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    group_effect[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept <span class="sc">+</span> group_effect[group[i]]<span class="sc">*</span>sigma_beta <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<div class="sourceCode" id="cb54"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>linear_model_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>  sigma_beta <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#illustrate improper uninformative prior for &gt;0.</span></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>)</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>    group_effect[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>  intercept <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>  slope <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="at">min =</span> <span class="dv">0</span>, <span class="at">max =</span> <span class="dv">100</span>)</span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>N) {</span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a>    y[i] <span class="sc">~</span> <span class="fu">dnorm</span>(intercept <span class="sc">+</span> group_effect[group[i]]<span class="sc">*</span>sigma_beta <span class="sc">+</span> slope<span class="sc">*</span>x[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb54-12"><a href="#cb54-12" aria-hidden="true" tabindex="-1"></a>linear_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(linear_model_code,</span>
+<span id="cb54-13"><a href="#cb54-13" aria-hidden="true" tabindex="-1"></a>                            <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="dv">12</span>, <span class="at">group =</span> group, <span class="at">x =</span> x),</span>
+<span id="cb54-14"><a href="#cb54-14" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y))</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Running calculate on model
+##   [Note] Any error reports that follow may simply reflect missing values in model variables.</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
 <p>The various ways to write random effects are statistically equivalent
 but can (will) result in different MCMC mixing and posterior
 correlations (or performance of other algorithms).</p>
@@ -783,39 +867,53 @@ effects with the same concepts.</p>
 <h1>Occupancy models (discrete latent states)</h1>
 <p>Here is a very basic occupancy model with one covariate for detection
 (<code>w</code>) and one for occurrence (<code>x</code>)</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>occ_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    alpha[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># parameters for occurrence</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>)</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    beta[j] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># parameters for detection</span></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_sites) {</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(psi[i]) <span class="ot">&lt;-</span> alpha[<span class="dv">1</span>] <span class="sc">+</span> alpha[<span class="dv">2</span>]<span class="sc">*</span>x[i] </span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>    z[i] <span class="sc">~</span> <span class="fu">dbern</span>(psi[i])</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_visits[i]) { <span class="co"># illustrate indexing on inner for loop range</span></span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">logit</span>(p[i,j]) <span class="ot">&lt;-</span> beta[<span class="dv">1</span>] <span class="sc">+</span> beta[<span class="dv">2</span>]<span class="sc">*</span>w[i, j]</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dbern</span>(z[i] <span class="sc">*</span> p[i, j])</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>num_sites <span class="ot">&lt;-</span> <span class="dv">100</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>num_visits <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">4</span>, <span class="dv">100</span>)</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(num_sites)</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(num_sites <span class="sc">*</span> <span class="fu">max</span>(num_visits)), <span class="at">nrow =</span> num_sites)</span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co"># let&#39;s use the model to simulate data</span></span>
-<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>occ_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(occ_code,</span>
-<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                         <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">num_sites =</span> num_sites,</span>
-<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">num_visits =</span> num_visits,</span>
-<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">w =</span> w,</span>
-<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">x =</span> x),</span>
-<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>                         <span class="at">calculate=</span><span class="cn">FALSE</span>) <span class="co"># don&#39;t calculate because values are not fully set up</span></span>
-<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;alpha[1:2]&#39;</span>,<span class="st">&#39;beta[1:2]&#39;</span>)</span>
-<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> occ_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
-<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span>alpha <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">2</span>)</span>
-<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span>beta <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="sc">-</span><span class="fl">0.2</span>)</span>
-<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes)</span>
-<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(occ_model<span class="sc">$</span>y)</span>
-<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(occ_model<span class="sc">$</span>z)</span>
-<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span><span class="fu">setData</span>(<span class="st">&#39;y&#39;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb61"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>occ_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>)</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>    alpha[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># parameters for occurrence</span></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>)</span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>    beta[j] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># parameters for detection</span></span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_sites) {</span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">logit</span>(psi[i]) <span class="ot">&lt;-</span> alpha[<span class="dv">1</span>] <span class="sc">+</span> alpha[<span class="dv">2</span>]<span class="sc">*</span>x[i] </span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a>    z[i] <span class="sc">~</span> <span class="fu">dbern</span>(psi[i])</span>
+<span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span>(j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_visits[i]) { <span class="co"># illustrate indexing on inner for loop range</span></span>
+<span id="cb61-10"><a href="#cb61-10" aria-hidden="true" tabindex="-1"></a>      <span class="fu">logit</span>(p[i,j]) <span class="ot">&lt;-</span> beta[<span class="dv">1</span>] <span class="sc">+</span> beta[<span class="dv">2</span>]<span class="sc">*</span>w[i, j]</span>
+<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a>      y[i,j] <span class="sc">~</span> <span class="fu">dbern</span>(z[i] <span class="sc">*</span> p[i, j])</span>
+<span id="cb61-12"><a href="#cb61-12" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb61-13"><a href="#cb61-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb61-14"><a href="#cb61-14" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb62"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>num_sites <span class="ot">&lt;-</span> <span class="dv">100</span></span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>num_visits <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">4</span>, <span class="dv">100</span>)</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(num_sites)</span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">rnorm</span>(num_sites <span class="sc">*</span> <span class="fu">max</span>(num_visits)), <span class="at">nrow =</span> num_sites)</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a><span class="co"># let&#39;s use the model to simulate data</span></span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>occ_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(occ_code,</span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>                         <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">num_sites =</span> num_sites,</span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">num_visits =</span> num_visits,</span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">w =</span> w,</span>
+<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>                                          <span class="at">x =</span> x),</span>
+<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a>                         <span class="at">calculate=</span><span class="cn">FALSE</span>) <span class="co"># don&#39;t calculate because values are not fully set up</span></span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
+<div class="sourceCode" id="cb67"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&#39;alpha[1:2]&#39;</span>,<span class="st">&#39;beta[1:2]&#39;</span>)</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> occ_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span>alpha <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">0</span>, .<span class="dv">2</span>)</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span>beta <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="sc">-</span><span class="fl">0.2</span>)</span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes)</span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(occ_model<span class="sc">$</span>y)</span></code></pre></div>
+<pre><code>##      [,1] [,2] [,3] [,4]
+## [1,]    1    1    1    1
+## [2,]    0    0    0    0
+## [3,]    0    1    0    0
+## [4,]    1    0    1    0
+## [5,]    1    1    1    1
+## [6,]    0    0    0    0</code></pre>
+<div class="sourceCode" id="cb69"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(occ_model<span class="sc">$</span>z)</span></code></pre></div>
+<pre><code>## [1] 1 0 1 1 1 0</code></pre>
+<div class="sourceCode" id="cb71"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>occ_model<span class="sc">$</span><span class="fu">setData</span>(<span class="st">&#39;y&#39;</span>)</span></code></pre></div>
 <p>Occupancy models can include groups and random effects using the
 ideas above.</p>
 </div>
@@ -823,32 +921,51 @@ ideas above.</p>
 <h1>State-space models (time-series with process noise and observation
 error)</h1>
 <p>We’ll use a simple linear auto-regressive state-space model.</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>ss_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  x[<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># initial state; other approaches are possible.</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>num_times)</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    x[t] <span class="sc">~</span> <span class="fu">dnorm</span>(alpha <span class="sc">+</span> rho<span class="sc">*</span>x[t<span class="dv">-1</span>], <span class="at">sd =</span> sigma_process) <span class="co"># auto-regressive state dynamics</span></span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_times)</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    y[t] <span class="sc">~</span> <span class="fu">dnorm</span>(x[t], <span class="at">sd =</span> sigma_obs) <span class="co"># noisy observations of the states</span></span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>  rho <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) </span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>  sigma_process <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#arbitrarily illustrating different priors</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>  sigma_obs <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>ss_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(</span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  ss_code,</span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">num_times =</span> <span class="dv">20</span>),</span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">rho =</span> <span class="fl">0.5</span>,</span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">sigma_process =</span> <span class="fl">0.1</span>, <span class="at">sigma_obs =</span> <span class="fl">0.1</span>,</span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>               <span class="at">x =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">19</span>))),</span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">calculate=</span><span class="cn">FALSE</span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="co"># giving inits is another way to get values in the model initially.</span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> ss_model<span class="sc">$</span><span class="fu">getNodeNames</span>(<span class="at">topOnly=</span><span class="cn">TRUE</span>)</span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>param_nodes</span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> ss_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sim_nodes)</span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>ss_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes, <span class="at">includeData =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>ss_model<span class="sc">$</span>y</span></code></pre></div>
+<div class="sourceCode" id="cb72"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>ss_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>  x[<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>) <span class="co"># initial state; other approaches are possible.</span></span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>num_times)</span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>    x[t] <span class="sc">~</span> <span class="fu">dnorm</span>(alpha <span class="sc">+</span> rho<span class="sc">*</span>x[t<span class="dv">-1</span>], <span class="at">sd =</span> sigma_process) <span class="co"># auto-regressive state dynamics</span></span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>num_times)</span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>    y[t] <span class="sc">~</span> <span class="fu">dnorm</span>(x[t], <span class="at">sd =</span> sigma_obs) <span class="co"># noisy observations of the states</span></span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a>  alpha <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">100</span>)</span>
+<span id="cb72-8"><a href="#cb72-8" aria-hidden="true" tabindex="-1"></a>  rho <span class="sc">~</span> <span class="fu">dunif</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>) </span>
+<span id="cb72-9"><a href="#cb72-9" aria-hidden="true" tabindex="-1"></a>  sigma_process <span class="sc">~</span> <span class="fu">dhalfflat</span>() <span class="co">#arbitrarily illustrating different priors</span></span>
+<span id="cb72-10"><a href="#cb72-10" aria-hidden="true" tabindex="-1"></a>  sigma_obs <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>)</span>
+<span id="cb72-11"><a href="#cb72-11" aria-hidden="true" tabindex="-1"></a>})</span></code></pre></div>
+<div class="sourceCode" id="cb73"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a>ss_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>  ss_code,</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">num_times =</span> <span class="dv">20</span>),</span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">alpha =</span> <span class="dv">0</span>, <span class="at">rho =</span> <span class="fl">0.5</span>,</span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">sigma_process =</span> <span class="fl">0.1</span>, <span class="at">sigma_obs =</span> <span class="fl">0.1</span>,</span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>               <span class="at">x =</span> <span class="fu">c</span>(<span class="fl">0.1</span>, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">19</span>))),</span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">calculate=</span><span class="cn">FALSE</span></span>
+<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
+<div class="sourceCode" id="cb79"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># giving inits is another way to get values in the model initially.</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> ss_model<span class="sc">$</span><span class="fu">getNodeNames</span>(<span class="at">topOnly=</span><span class="cn">TRUE</span>)</span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>param_nodes</span></code></pre></div>
+<pre><code>## [1] &quot;x[1]&quot;          &quot;alpha&quot;         &quot;rho&quot;           &quot;sigma_process&quot;
+## [5] &quot;sigma_obs&quot;</code></pre>
+<div class="sourceCode" id="cb81"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> ss_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(sim_nodes)</span></code></pre></div>
+<pre><code>## [1] &quot;lifted_alpha_plus_rho_times_x_oBt_minus_1_cB_L3[2]&quot;
+## [2] &quot;y[1]&quot;                                              
+## [3] &quot;x[2]&quot;                                              
+## [4] &quot;lifted_alpha_plus_rho_times_x_oBt_minus_1_cB_L3[3]&quot;
+## [5] &quot;y[2]&quot;                                              
+## [6] &quot;x[3]&quot;</code></pre>
+<div class="sourceCode" id="cb83"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>ss_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes, <span class="at">includeData =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>ss_model<span class="sc">$</span>y</span></code></pre></div>
+<pre><code>##  [1]  0.063690906 -0.173670119 -0.284443127 -0.082555614  0.149705801
+##  [6] -0.112945038 -0.161591895 -0.054878157 -0.113243496 -0.039980123
+## [11]  0.040023416  0.057852108  0.191451087  0.109332855  0.120459125
+## [16]  0.089728984  0.036616937  0.302829980 -0.117359494  0.002615784</code></pre>
 </div>
 <div id="discrete-markov-models-also-illustrating-constraints" class="slide section level1">
 <h1>Discrete Markov models, also illustrating constraints</h1>
@@ -868,33 +985,47 @@ and that probabilities of moving between locations are symmetric.</p>
 (HMM) is an extension. In that case we would also need a matrix of
 probabilities of observing each state from each actual state along with
 a model component for initial state probabilities.)</p>
-<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>mm_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  prob12 <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  prob23 <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  prob13 <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  ones[<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dconstraint</span>(prob12 <span class="sc">+</span> prob13 <span class="sc">&lt;</span> <span class="dv">1</span>)</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  ones[<span class="dv">2</span>] <span class="sc">~</span> <span class="fu">dconstraint</span>(prob12 <span class="sc">+</span> prob23 <span class="sc">&lt;</span> <span class="dv">1</span>)</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>  ones[<span class="dv">3</span>] <span class="sc">~</span> <span class="fu">dconstraint</span>(prob23 <span class="sc">+</span> prob13 <span class="sc">&lt;</span> <span class="dv">1</span>)</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  A[<span class="dv">1</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">-</span>prob12<span class="sc">-</span>prob13, prob12, prob13)</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  A[<span class="dv">2</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(prob12, <span class="dv">1</span><span class="sc">-</span>prob12<span class="sc">-</span>prob23, prob23)</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  A[<span class="dv">3</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(prob13, prob23, <span class="dv">1</span><span class="sc">-</span>prob13<span class="sc">-</span>prob23)  </span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>num_times) {</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    z[t] <span class="sc">~</span> <span class="fu">dcat</span>(A[z[t<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>])</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>mm_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(mm_code,</span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>                        <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">num_times =</span> <span class="dv">20</span>),</span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>                        <span class="at">data =</span> <span class="fu">list</span>(<span class="at">ones =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">3</span>),</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">z =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">19</span>))), <span class="co"># discuss missing data as NA</span></span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>                        <span class="at">calculate=</span><span class="cn">FALSE</span>)</span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>prob12 <span class="ot">&lt;-</span> <span class="fl">0.2</span></span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>prob13 <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>prob23 <span class="ot">&lt;-</span> <span class="fl">0.4</span></span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;prob12&quot;</span>, <span class="st">&quot;prob23&quot;</span>, <span class="st">&quot;prob13&quot;</span>)</span>
-<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> mm_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
-<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes)</span>
-<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>z</span>
-<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>A</span></code></pre></div>
+<div class="sourceCode" id="cb85"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a>mm_code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>  prob12 <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>  prob23 <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>  prob13 <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>,<span class="dv">1</span>)</span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>  ones[<span class="dv">1</span>] <span class="sc">~</span> <span class="fu">dconstraint</span>(prob12 <span class="sc">+</span> prob13 <span class="sc">&lt;</span> <span class="dv">1</span>)</span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>  ones[<span class="dv">2</span>] <span class="sc">~</span> <span class="fu">dconstraint</span>(prob12 <span class="sc">+</span> prob23 <span class="sc">&lt;</span> <span class="dv">1</span>)</span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a>  ones[<span class="dv">3</span>] <span class="sc">~</span> <span class="fu">dconstraint</span>(prob23 <span class="sc">+</span> prob13 <span class="sc">&lt;</span> <span class="dv">1</span>)</span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a>  A[<span class="dv">1</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span><span class="sc">-</span>prob12<span class="sc">-</span>prob13, prob12, prob13)</span>
+<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a>  A[<span class="dv">2</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(prob12, <span class="dv">1</span><span class="sc">-</span>prob12<span class="sc">-</span>prob23, prob23)</span>
+<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a>  A[<span class="dv">3</span>,<span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(prob13, prob23, <span class="dv">1</span><span class="sc">-</span>prob13<span class="sc">-</span>prob23)  </span>
+<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(t <span class="cf">in</span> <span class="dv">2</span><span class="sc">:</span>num_times) {</span>
+<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a>    z[t] <span class="sc">~</span> <span class="fu">dcat</span>(A[z[t<span class="dv">-1</span>], <span class="dv">1</span><span class="sc">:</span><span class="dv">3</span>])</span>
+<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb85-15"><a href="#cb85-15" aria-hidden="true" tabindex="-1"></a>mm_model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(mm_code,</span>
+<span id="cb85-16"><a href="#cb85-16" aria-hidden="true" tabindex="-1"></a>                        <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">num_times =</span> <span class="dv">20</span>),</span>
+<span id="cb85-17"><a href="#cb85-17" aria-hidden="true" tabindex="-1"></a>                        <span class="at">data =</span> <span class="fu">list</span>(<span class="at">ones =</span> <span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">3</span>),</span>
+<span id="cb85-18"><a href="#cb85-18" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">z =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="fu">rep</span>(<span class="cn">NA</span>, <span class="dv">19</span>))), <span class="co"># discuss missing data as NA</span></span>
+<span id="cb85-19"><a href="#cb85-19" aria-hidden="true" tabindex="-1"></a>                        <span class="at">calculate=</span><span class="cn">FALSE</span>)</span></code></pre></div>
+<pre><code>## Defining model</code></pre>
+<pre><code>##   [Note] Detected use of non-constant indexes: z[1].
+##          For computational efficiency we recommend specifying these in &#39;constants&#39;.</code></pre>
+<pre><code>## Building model</code></pre>
+<pre><code>## Setting data and initial values</code></pre>
+<pre><code>## Checking model sizes and dimensions</code></pre>
+<pre><code>##   [Note] This model is not fully initialized. This is not an error.
+##          To see which variables are not initialized, use model$initializeInfo().
+##          For more information on model initialization, see help(modelInitialization).</code></pre>
+<div class="sourceCode" id="cb92"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>prob12 <span class="ot">&lt;-</span> <span class="fl">0.2</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>prob13 <span class="ot">&lt;-</span> <span class="fl">0.3</span></span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>prob23 <span class="ot">&lt;-</span> <span class="fl">0.4</span></span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>param_nodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;prob12&quot;</span>, <span class="st">&quot;prob23&quot;</span>, <span class="st">&quot;prob13&quot;</span>)</span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>sim_nodes <span class="ot">&lt;-</span> mm_model<span class="sc">$</span><span class="fu">getDependencies</span>(param_nodes, <span class="at">self=</span><span class="cn">FALSE</span>)</span>
+<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span><span class="fu">simulate</span>(sim_nodes)</span>
+<span id="cb92-7"><a href="#cb92-7" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>z</span></code></pre></div>
+<pre><code>##  [1] 2 1 3 2 3 1 1 1 2 2 1 1 3 2 3 3 3 3 3 3</code></pre>
+<div class="sourceCode" id="cb94"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>mm_model<span class="sc">$</span>A</span></code></pre></div>
+<pre><code>##      [,1] [,2] [,3]
+## [1,]  0.5  0.2  0.3
+## [2,]  0.2  0.4  0.4
+## [3,]  0.3  0.4  0.3</code></pre>
 </div>
 <div id="documentation-on-available-functions-and-distributions" class="slide section level1">
 <h1>Documentation on available functions and distributions</h1>

@@ -19,7 +19,7 @@ slides > slide {
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 library(nimble)
 library(coda)
-recalculate <- FALSE
+recalculate <- TRUE
 ```
 
 Overview
