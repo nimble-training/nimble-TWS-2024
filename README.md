@@ -69,3 +69,8 @@ Prior to the workshop, you should also install the following R packages (beyond 
 install.packages(c("nimbleHMC", "mcmcplots", "coda", "nimbleEcology", "compareMCMCs"))
 ```
 
+We will use some other packages to set up various examples. To be able to run everything in the workshop material, you will also want:
+
+```
+install.packages(c("CARBayesdata","sp","spdep","classInt", "glmmTMB"))
+```
