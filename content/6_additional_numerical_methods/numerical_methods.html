@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
   <meta name="author" content="NIMBLE Development Team" />
-  <title>Other Methods in NIMBLE</title>
+  <title>Numerical Methods in NIMBLE</title>
   <style type="text/css">
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -521,7 +521,7 @@ list-style-type: none;
 </head>
 <body>
 <div class="slide titlepage">
-  <h1 class="title">Other Methods in NIMBLE</h1>
+  <h1 class="title">Numerical Methods in NIMBLE</h1>
   <h1 class="subtitle">NIMBLE 2024 TWS Workshop</h1>
   <p class="author">
 NIMBLE Development Team
@@ -567,7 +567,7 @@ effects</li>
 data</li>
 <li><span class="math inline">\(\widehat{\mathbf{u}}\)</span>: MLE of
 random effects for a given value of <span class="math inline">\(\boldsymbol{\theta}\)</span></li>
-<li><span class="math inline">\(g(\mathbf{\widehat{u}}|\boldsymbol{\theta})\)</span>:
+<li><span class="math inline">\(g(\mathbf{\widehat{u}}|\mathbf{y},\boldsymbol{\theta})\)</span>:
 is a Gaussian approximation of the random effects evaluated at their
 mean.</li>
 </ul>
@@ -579,52 +579,9 @@ mean.</li>
 <li>INLA</li>
 <li>TMB</li>
 <li>glmmTMB</li>
-<li>lmer</li>
+<li>lme4</li>
 <li>and many more.</li>
 </ul>
-</div>
-<div id="laplace-in-glmmtmb" class="slide section level1">
-<h1>Laplace in glmmTMB</h1>
-<p>Consider the <code>data(ChickWeight)</code> example where we take
-repeated measurements over time of chicks and track their weight. If we
-use the R package <code>glmmTMB</code> we can fit this as a linear mixed
-model.</p>
-<p>For comparability with nimble we will not use restricted maximum
-likelihood (REML) for fitting the variance terms.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">data</span>(ChickWeight)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(glmmTMB)</span></code></pre></div>
-<pre><code>## Warning in checkDepPackageVersion(dep_pkg = &quot;TMB&quot;): Package version inconsistency detected.
-## glmmTMB was built with TMB version 1.9.6
-## Current TMB version is 1.9.15
-## Please re-install glmmTMB from source or restore original &#39;TMB&#39; package (see &#39;?reinstalling&#39; for more information)</code></pre>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>fit.glmmtmb <span class="ot">&lt;-</span> <span class="fu">glmmTMB</span>(weight <span class="sc">~</span> Time <span class="sc">+</span> Diet <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>Chick), <span class="at">data =</span> ChickWeight, <span class="at">REML =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">summary</span>(fit.glmmtmb)</span></code></pre></div>
-<pre><code>##  Family: gaussian  ( identity )
-## Formula:          weight ~ Time + Diet + (1 | Chick)
-## Data: ChickWeight
-## 
-##      AIC      BIC   logLik deviance df.resid 
-##   5619.2   5649.7  -2802.6   5605.2      571 
-## 
-## Random effects:
-## 
-## Conditional model:
-##  Groups   Name        Variance Std.Dev.
-##  Chick    (Intercept) 478.0    21.86   
-##  Residual             797.8    28.25   
-## Number of obs: 578, groups:  Chick, 50
-## 
-## Dispersion estimate for gaussian family (sigma^2):  798 
-## 
-## Conditional model:
-##             Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)  11.2311     5.5781    2.01 0.044068 *  
-## Time          8.7175     0.1753   49.74  &lt; 2e-16 ***
-## Diet2        16.2178     9.0789    1.79 0.074045 .  
-## Diet3        36.5498     9.0789    4.03 5.68e-05 ***
-## Diet4        30.0295     9.0856    3.31 0.000949 ***
-## ---
-## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1</code></pre>
 </div>
 <div id="laplace-in-nimble" class="slide section level1">
 <h1>Laplace in NIMBLE</h1>
@@ -632,70 +589,92 @@ likelihood (REML) for fitting the variance terms.</p>
 <li>In NIMBLE, an LA algorithm can be built using
 <strong><code>buildLaplace</code></strong> as follows:</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>laplace <span class="ot">&lt;-</span> <span class="fu">buildLaplace</span>(model, <span class="co"># model object, the only compulsory input</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>                        paramNodes, <span class="co"># top-level stochastic nodes</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>                        randomEffectsNodes, <span class="co"># latent variables</span></span>
-<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>                        calcNodes, <span class="co"># random effects and dependencies + necessary deterministic nodes</span></span>
-<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>                        calcNodesOther, <span class="co"># data nodes depending only on params, i.e. y*</span></span>
-<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>                        <span class="at">control =</span> <span class="fu">list</span>() <span class="co"># Additional settings, e.g. inner optimiser, checking, Laplace split etc</span></span>
-<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>                        )</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>laplace <span class="ot">&lt;-</span> <span class="fu">buildLaplace</span>(model, <span class="co"># model object, the only compulsory input</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>                        paramNodes, <span class="co"># top-level stochastic nodes</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>                        randomEffectsNodes, <span class="co"># latent variables</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>                        calcNodes, <span class="co"># random effects and dependencies + necessary deterministic nodes</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>                        calcNodesOther, <span class="co"># data nodes depending only on params, i.e. y*</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>                        <span class="at">control =</span> <span class="fu">list</span>() <span class="co"># Additional settings, e.g. inner optimiser, checking, Laplace split etc</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>                        )</span></code></pre></div>
 <ul>
 <li>Compile the algorithm:</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>Claplace <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(laplace, <span class="at">project =</span> model)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>Claplace <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(laplace, <span class="at">project =</span> model)</span></code></pre></div>
 <ul>
 <li>Run it:</li>
 </ul>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">runLaplace</span>(laplace, <span class="co"># Laplace algorithm</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>                  pStart,  <span class="co"># Start value for MLE</span></span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>                  <span class="at">method =</span> <span class="st">&quot;BFGS&quot;</span>,               <span class="co"># Outer optimisation method</span></span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>                  <span class="at">originalScale =</span> <span class="cn">TRUE</span>,          <span class="co"># Scale of MLE results: original or transformed (unconstrained)</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>                  <span class="at">randomEffectsStdError =</span> <span class="cn">TRUE</span>,  <span class="co"># Return std. error of random effects?</span></span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>                  <span class="at">jointCovariance =</span> <span class="cn">FALSE</span>        <span class="co"># Return joint covariance matrix of params and random effects?</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>                  )</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">runLaplace</span>(laplace, <span class="co"># Laplace algorithm</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>                  pStart,  <span class="co"># Start value for MLE</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>                  <span class="at">method =</span> <span class="st">&quot;BFGS&quot;</span>,               <span class="co"># Outer optimisation method</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>                  <span class="at">originalScale =</span> <span class="cn">TRUE</span>,          <span class="co"># Scale of MLE results: original or transformed (unconstrained)</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>                  <span class="at">randomEffectsStdError =</span> <span class="cn">TRUE</span>,  <span class="co"># Return std. error of random effects?</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>                  <span class="at">jointCovariance =</span> <span class="cn">FALSE</span>        <span class="co"># Return joint covariance matrix of params and random effects?</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>                  )</span></code></pre></div>
 </div>
-<div id="build-lmm-in-nimble" class="slide section level1">
-<h1>Build LMM in NIMBLE</h1>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>lmm <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  </span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nbeta ) beta[i] <span class="sc">~</span> <span class="fu">dflat</span>()</span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  </span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  sigma_re <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
-<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  </span>
-<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nchicks ){</span>
-<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>    re[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_re)</span>
-<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  }</span>
-<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  </span>
-<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  <span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n ){</span>
-<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>    mu[i] <span class="ot">&lt;-</span> <span class="fu">sum</span>(X[i,<span class="dv">1</span><span class="sc">:</span>nbeta] <span class="sc">*</span> beta[<span class="dv">1</span><span class="sc">:</span>nbeta]) <span class="sc">+</span> re[Chick[i]]</span>
-<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>    weight[i] <span class="sc">~</span> <span class="fu">dnorm</span>(mu[i], <span class="at">sd =</span> sigma)</span>
-<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>  }</span>
-<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>  </span>
-<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>})</span>
-<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a></span>
-<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span>Time <span class="sc">+</span> <span class="fu">factor</span>(Diet), <span class="at">data =</span> ChickWeight)</span>
-<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>chick_constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(ChickWeight),</span>
-<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>    <span class="at">nbeta =</span> <span class="fu">ncol</span>(X), </span>
-<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a>    <span class="at">X =</span> X, </span>
-<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>    <span class="at">nchicks =</span> <span class="fu">max</span>(<span class="fu">as.integer</span>(ChickWeight<span class="sc">$</span>Chick)), </span>
-<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a>    <span class="at">Chick =</span> <span class="fu">as.integer</span>(ChickWeight<span class="sc">$</span>Chick))</span>
-<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a></span>
-<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a>chick_inits <span class="ot">&lt;-</span> <span class="cf">function</span>(){</span>
-<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">sigma =</span> <span class="fu">rgamma</span>(<span class="dv">1</span>,<span class="dv">5</span>,<span class="dv">2</span>), <span class="at">sigma_re =</span> <span class="fu">rgamma</span>(<span class="dv">1</span>, <span class="fl">0.5</span>, <span class="dv">2</span>), <span class="at">re =</span> <span class="fu">rnorm</span>(chick_constants<span class="sc">$</span>nchicks), <span class="at">beta =</span> <span class="fu">rnorm</span>(chick_constants<span class="sc">$</span>nbeta))</span>
-<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a>}</span>
-<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a></span>
-<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(lmm, </span>
-<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a>                      <span class="at">data =</span> <span class="fu">list</span>(<span class="at">weight =</span> ChickWeight<span class="sc">$</span>weight), </span>
-<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a>                      <span class="at">constants =</span> chick_constants,</span>
-<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a>                      <span class="at">inits =</span> <span class="fu">chick_inits</span>(), <span class="at">buildDerivs =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a>cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
-<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a></span>
-<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a>laplace <span class="ot">&lt;-</span> <span class="fu">buildLaplace</span>(model)</span>
-<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a>claplace <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(laplace, <span class="at">project =</span> model)</span>
-<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">runLaplace</span>(claplace)</span>
-<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a></span>
-<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a>res<span class="sc">$</span>summary<span class="sc">$</span>params[<span class="fu">grepl</span>(<span class="st">&quot;beta&quot;</span>, <span class="fu">rownames</span>(res<span class="sc">$</span>summary<span class="sc">$</span>params)),]</span></code></pre></div>
+<div id="occupancy-model-with-random-effects" class="slide section level1">
+<h1>Occupancy Model with Random Effects</h1>
+<p>Simulate some data;</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="do">## number of sites</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>nLocs <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>nSites <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>N <span class="ot">&lt;-</span> nLocs<span class="sc">*</span>nSites</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="do">## number of observation periods</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>T <span class="ot">&lt;-</span> <span class="dv">6</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="do">## simulate z (occupied status),</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="do">## and y (encounter histories)</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> nSites, <span class="at">ncol =</span> nLocs)</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="fu">c</span>(nSites, nLocs, T))</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nSites ){</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>  pOcc <span class="ot">&lt;-</span> <span class="fu">expit</span>(<span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>,<span class="fl">0.25</span>))</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  pObs <span class="ot">&lt;-</span> <span class="fu">expit</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="fl">0.1</span>))</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  <span class="cf">for</span>( j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nLocs ) {</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>      z[i,j] <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="dv">1</span>, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span>pOcc)</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>      y[i, j, <span class="dv">1</span><span class="sc">:</span>T] <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(T, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span>z[i,j]<span class="sc">*</span>pObs)</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>  }</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>occmodel <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  beta0_det <span class="sc">~</span> <span class="fu">dflat</span>()</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  beta0_occ <span class="sc">~</span> <span class="fu">dflat</span>()</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  sigma_occ <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  sigma_obs <span class="sc">~</span> <span class="fu">dhalfflat</span>()</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  </span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nSites ){</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>    z_re[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_occ)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>    pOcc[i] <span class="ot">&lt;-</span> <span class="fu">expit</span>(beta0_occ <span class="sc">+</span> z_re[i])</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    y_re[i] <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">sd =</span> sigma_obs)</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    pObs[i] <span class="ot">&lt;-</span> <span class="fu">expit</span>(beta0_det <span class="sc">+</span> y_re[i])</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>    </span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>    <span class="cf">for</span>( j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nLocs ){</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>      y[i,j,<span class="dv">1</span><span class="sc">:</span>T] <span class="sc">~</span> <span class="fu">dOcc_s</span>(pOcc[i], pObs[i], <span class="at">len=</span>T)</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>    }</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  }</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>})</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>occ_constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">nSites =</span> nSites, <span class="at">nLocs =</span> nLocs, <span class="at">T =</span> T)</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>occ_inits <span class="ot">&lt;-</span> <span class="cf">function</span>(){</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">sigma_occ =</span> <span class="fu">rgamma</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>), <span class="at">sigma_obs =</span> <span class="fu">rgamma</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">1</span>), <span class="at">z_re =</span> <span class="fu">rnorm</span>(<span class="fu">nrow</span>(z)), <span class="at">y_re =</span> <span class="fu">rnorm</span>(<span class="fu">nrow</span>(z)), <span class="at">beta0_det =</span> <span class="dv">0</span>, <span class="at">beta_occ =</span> <span class="dv">0</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>}</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(occmodel, </span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>                      <span class="at">data =</span> <span class="fu">list</span>(<span class="at">y =</span> y), </span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>                      <span class="at">constants =</span> occ_constants,</span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>                      <span class="at">inits =</span> <span class="fu">occ_inits</span>(), <span class="at">buildDerivs =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>cmodel <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>laplace <span class="ot">&lt;-</span> <span class="fu">buildLaplace</span>(model)</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a></span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>pars <span class="ot">&lt;-</span> laplace<span class="sc">$</span><span class="fu">getNodeNamesVec</span>()</span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>laplace<span class="sc">$</span><span class="fu">calcLogLik</span>(<span class="at">p =</span> <span class="fu">values</span>(model, pars))</span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a></span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>claplace <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(laplace, <span class="at">project =</span> model)</span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">runLaplace</span>(claplace)</span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a>res<span class="sc">$</span>summary<span class="sc">$</span>params</span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="fu">values</span>(cmodel, pars)</span></code></pre></div>
 </div>
 <div id="some-notes-about-nimble-laplace" class="slide section level1">
 <h1>Some notes about NIMBLE Laplace</h1>
@@ -720,50 +699,66 @@ incorporate additional optimisation methods (e.g. those in
 <code>control = list(innerOptimMethod = &quot;nlminb&quot;)</code> in
 <code>buildLaplace</code>.</p></li>
 </ul>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">updateSettings</span>(<span class="at">innerOptimMethod =</span> <span class="st">&quot;nlminb&quot;</span>, <span class="at">useInnerCache =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>fit.nlminb <span class="ot">&lt;-</span> claplace<span class="sc">$</span><span class="fu">findMLE</span>(<span class="at">method =</span> <span class="st">&quot;nlminb&quot;</span>, <span class="at">hessian =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>fit.nlminb<span class="sc">$</span>par</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">updateSettings</span>(<span class="at">innerOptimMethod =</span> <span class="st">&quot;nlminb&quot;</span>, <span class="at">useInnerCache =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>fit.nlminb <span class="ot">&lt;-</span> claplace<span class="sc">$</span><span class="fu">findMLE</span>(<span class="at">method =</span> <span class="st">&quot;nlminb&quot;</span>, <span class="at">hessian =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>fit.nlminb<span class="sc">$</span>par</span></code></pre></div>
 </div>
-<div id="additional-options" class="slide section level1">
-<h1>Additional Options</h1>
-<p><strong>Option: integrate out all latent states
-(<code>&#39;re[1:50]&#39;</code>) and use MCMC for parameters only
-(<code>&#39;beta&#39;</code>, <code>&#39;sigma&#39;, &#39;sigma_re&#39;</code>)</strong></p>
+<div id="additional-options-aghq" class="slide section level1">
+<h1>Additional Options (AGHQ)</h1>
+<p>Adaptive Gauss-Hermite Quadrature (AGHQ) is a generalization of
+Laplace that includes additional integration nodes. When Laplace is not
+very accurate, increasing the number of integration points can improve
+estimation.</p>
+<p>Available as <code>buildAGHQ</code>, or as part of
+<code>Laplace</code>.</p>
+<p>Good check to see if Laplace is accurate.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">updateSettings</span>(<span class="at">nQuad =</span> <span class="dv">1</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">calcLogLik</span>(<span class="at">p =</span> <span class="fu">values</span>(cmodel, pars))</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">updateSettings</span>(<span class="at">nQuad =</span> <span class="dv">3</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">calcLogLik</span>(<span class="at">p =</span> <span class="fu">values</span>(cmodel, pars))</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">updateSettings</span>(<span class="at">nQuad =</span> <span class="dv">11</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">calcLogLik</span>(<span class="at">p =</span> <span class="fu">values</span>(cmodel, pars))</span></code></pre></div>
+</div>
+<div id="additional-options-mcmc" class="slide section level1">
+<h1>Additional Options (MCMC)</h1>
+<p><strong>Option: integrate out all latent states and use MCMC for
+parameters only</strong></p>
 <ul>
 <li>Write a custom log-likelihood function</li>
 </ul>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>llFun_Laplace <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(model, paramNodes, randomEffectsNodes, calcNodes) {</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>    laplace <span class="ot">&lt;-</span> <span class="fu">buildLaplace</span>(model, paramNodes, randomEffectsNodes, calcNodes)</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>  },</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>() {</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>    pvals <span class="ot">&lt;-</span> <span class="fu">values</span>(model, paramNodes)</span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>    ll <span class="ot">&lt;-</span> laplace<span class="sc">$</span><span class="fu">calcLaplace</span>(pvals)</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>    <span class="fu">return</span>(ll)</span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>  }</span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>)</span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>randomEffectsNodes <span class="ot">&lt;-</span> <span class="st">&quot;re[1:50]&quot;</span></span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>paramNodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;beta&quot;</span>, <span class="st">&quot;sigma&quot;</span>, <span class="st">&quot;sigma_re&quot;</span>)</span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>calcNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(randomEffectsNodes)</span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="do">## Generate the custom log-likelihood function for MCMC</span></span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>Rll_Laplace <span class="ot">&lt;-</span> <span class="fu">llFun_Laplace</span>(model, paramNodes, randomEffectsNodes, calcNodes)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>llFun_Laplace <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">setup =</span> <span class="cf">function</span>(model, paramNodes, randomEffectsNodes, calcNodes) {</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>    laplace <span class="ot">&lt;-</span> <span class="fu">buildLaplace</span>(model, paramNodes, randomEffectsNodes, calcNodes)</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  },</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">run =</span> <span class="cf">function</span>() {</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    pvals <span class="ot">&lt;-</span> <span class="fu">values</span>(model, paramNodes)</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>    ll <span class="ot">&lt;-</span> laplace<span class="sc">$</span><span class="fu">calcLaplace</span>(pvals)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>    <span class="fu">returnType</span>(<span class="fu">double</span>())</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>    <span class="fu">return</span>(ll)</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  }</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>)</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>randomEffectsNodes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;y_re&quot;</span>, <span class="st">&quot;z_re&quot;</span>)</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>paramNodes <span class="ot">&lt;-</span> pars</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>calcNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(randomEffectsNodes)</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="do">## Generate the custom log-likelihood function for MCMC</span></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>Rll_Laplace <span class="ot">&lt;-</span> <span class="fu">llFun_Laplace</span>(model, paramNodes, randomEffectsNodes, calcNodes)</span></code></pre></div>
 <ul>
-<li>Specify a <code>RW_llFunction</code> sampler for parameter nodes
-<code>&#39;sigma&#39;</code>, <code>&#39;sigma_re&#39;</code> and
-<code>&#39;beta&#39;</code>.</li>
+<li>Specify a <code>RW_llFunction</code> sampler for parameter
+nodes.</li>
 </ul>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(model, <span class="at">nodes =</span> <span class="cn">NULL</span>)</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>paramNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">expandNodeNames</span>(paramNodes, <span class="at">returnScalarComponents =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="cf">for</span>(tarNode <span class="cf">in</span> paramNodes){</span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>  mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> tarNode, <span class="at">type =</span> <span class="st">&quot;RW_llFunction&quot;</span>,</span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>                      <span class="at">control =</span> <span class="fu">list</span>(<span class="at">llFunction =</span> Rll_Laplace, <span class="at">includesTarget =</span> <span class="cn">FALSE</span>))</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>}</span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a>mcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc)</span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>fit.mcmc <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(cmcmc, <span class="at">niter =</span> <span class="dv">10000</span>, </span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>                          <span class="at">nchains =</span> <span class="dv">3</span>, <span class="at">nburnin =</span> <span class="dv">5000</span>, <span class="at">samplesAsCodaMCMC =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="fu">plot</span>(fit.mcmc[,<span class="fu">c</span>(<span class="st">&#39;beta[1]&#39;</span>, <span class="st">&#39;beta[2]&#39;</span>)])</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>mcmcConf <span class="ot">&lt;-</span> <span class="fu">configureMCMC</span>(model, <span class="at">nodes =</span> <span class="cn">NULL</span>)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>paramNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">expandNodeNames</span>(paramNodes, <span class="at">returnScalarComponents =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="cf">for</span>(tarNode <span class="cf">in</span> paramNodes){</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  mcmcConf<span class="sc">$</span><span class="fu">addSampler</span>(<span class="at">target =</span> tarNode, <span class="at">type =</span> <span class="st">&quot;RW_llFunction&quot;</span>,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>                      <span class="at">control =</span> <span class="fu">list</span>(<span class="at">llFunction =</span> Rll_Laplace, <span class="at">includesTarget =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>}</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>mcmc <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(mcmcConf)</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>cmcmc <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc)</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>fit.mcmc <span class="ot">&lt;-</span> <span class="fu">runMCMC</span>(cmcmc, <span class="at">niter =</span> <span class="dv">10000</span>, </span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>                          <span class="at">nchains =</span> <span class="dv">3</span>, <span class="at">nburnin =</span> <span class="dv">5000</span>, <span class="at">samplesAsCodaMCMC =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="fu">plot</span>(fit.mcmc[,<span class="fu">c</span>(<span class="st">&#39;beta0_det&#39;</span>, <span class="st">&#39;beta0_occ&#39;</span>)])</span></code></pre></div>
 </div>
 <div id="some-notes-about-laplace-within-mcmc" class="slide section level1">
 <h1>Some notes about Laplace within MCMC</h1>
@@ -784,6 +779,20 @@ is a different story when being involved in MCMC running a large number
 of iterations. Thus the MCMC+Laplace workflow would be ideal for models
 with high-dimensional and complex random effects structures.</li>
 </ul>
+</div>
+<div id="future-developments-for-nimblequad" class="slide section level1">
+<h1>Future Developments for <code>nimbleQuad</code></h1>
+<ul>
+<li>Additional quadrature rules</li>
+</ul>
+<p>More numerical integration within models. E.g. sparse quadrature
+grids for when Laplace is ineffective.</p>
+<ul>
+<li>Approximate Bayesian inference through numerical integration (INLA
+like)</li>
+</ul>
+<p>Similar to buildLaplace but instead of the MLE get the maximum a
+posteriori mode (MAP) and approximate credible intervals.</p>
 </div>
 
   <!-- dynamically load mathjax for compatibility with self-contained -->

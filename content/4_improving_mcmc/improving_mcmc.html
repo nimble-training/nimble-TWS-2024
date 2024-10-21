@@ -954,26 +954,25 @@ distance depends on speed.</p>
 <span id="cb23-11"><a href="#cb23-11" tabindex="-1"></a>  }</span>
 <span id="cb23-12"><a href="#cb23-12" tabindex="-1"></a>})</span>
 <span id="cb23-13"><a href="#cb23-13" tabindex="-1"></a></span>
-<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a>data <span class="ot">&lt;-</span> </span>
-<span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">b0 =</span> <span class="dv">0</span>, <span class="at">b1 =</span> <span class="dv">3</span>, <span class="at">sigma =</span> <span class="dv">3</span>)</span>
-<span id="cb23-16"><a href="#cb23-16" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(cars), <span class="at">speed =</span> cars<span class="sc">$</span>speed)</span>
-<span id="cb23-17"><a href="#cb23-17" tabindex="-1"></a></span>
-<span id="cb23-18"><a href="#cb23-18" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> code, </span>
-<span id="cb23-19"><a href="#cb23-19" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">dist =</span> cars<span class="sc">$</span>dist), </span>
-<span id="cb23-20"><a href="#cb23-20" tabindex="-1"></a>                     <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(cars), <span class="at">speed =</span> cars<span class="sc">$</span>speed),                      <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">b0 =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>), <span class="at">b1 =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>), <span class="at">sigma =</span> <span class="fu">rgamma</span>(<span class="dv">1</span>,<span class="dv">1</span>)))</span>
-<span id="cb23-21"><a href="#cb23-21" tabindex="-1"></a></span>
-<span id="cb23-22"><a href="#cb23-22" tabindex="-1"></a>cmodel  <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
-<span id="cb23-23"><a href="#cb23-23" tabindex="-1"></a><span class="do">## Build the MCMC</span></span>
-<span id="cb23-24"><a href="#cb23-24" tabindex="-1"></a>mcmc    <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(model, <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">&quot;b0&quot;</span>,  <span class="st">&quot;b1&quot;</span>, <span class="st">&quot;sigma&quot;</span>)) <span class="do">## Track key parameters</span></span>
-<span id="cb23-25"><a href="#cb23-25" tabindex="-1"></a><span class="do">## Compile the MCMC samplers into C++</span></span>
-<span id="cb23-26"><a href="#cb23-26" tabindex="-1"></a>cmcmc   <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc, <span class="at">project =</span> model)</span>
-<span id="cb23-27"><a href="#cb23-27" tabindex="-1"></a></span>
-<span id="cb23-28"><a href="#cb23-28" tabindex="-1"></a><span class="do">## Now run some iterations of the MCMC</span></span>
-<span id="cb23-29"><a href="#cb23-29" tabindex="-1"></a>cmcmc<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1000</span>)</span>
-<span id="cb23-30"><a href="#cb23-30" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(cmcmc<span class="sc">$</span>mvSamples)</span>
-<span id="cb23-31"><a href="#cb23-31" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">as.mcmc</span>(samples)</span>
-<span id="cb23-32"><a href="#cb23-32" tabindex="-1"></a></span>
-<span id="cb23-33"><a href="#cb23-33" tabindex="-1"></a><span class="fu">plot</span>(out[,<span class="st">&#39;b0&#39;</span>])</span></code></pre></div>
+<span id="cb23-14"><a href="#cb23-14" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">b0 =</span> <span class="dv">0</span>, <span class="at">b1 =</span> <span class="dv">3</span>, <span class="at">sigma =</span> <span class="dv">3</span>)</span>
+<span id="cb23-15"><a href="#cb23-15" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(cars), <span class="at">speed =</span> cars<span class="sc">$</span>speed)</span>
+<span id="cb23-16"><a href="#cb23-16" tabindex="-1"></a></span>
+<span id="cb23-17"><a href="#cb23-17" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> code, </span>
+<span id="cb23-18"><a href="#cb23-18" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">dist =</span> cars<span class="sc">$</span>dist), </span>
+<span id="cb23-19"><a href="#cb23-19" tabindex="-1"></a>                     <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(cars), <span class="at">speed =</span> cars<span class="sc">$</span>speed),                      <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">b0 =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>), <span class="at">b1 =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>), <span class="at">sigma =</span> <span class="fu">rgamma</span>(<span class="dv">1</span>,<span class="dv">1</span>)))</span>
+<span id="cb23-20"><a href="#cb23-20" tabindex="-1"></a></span>
+<span id="cb23-21"><a href="#cb23-21" tabindex="-1"></a>cmodel  <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
+<span id="cb23-22"><a href="#cb23-22" tabindex="-1"></a><span class="do">## Build the MCMC</span></span>
+<span id="cb23-23"><a href="#cb23-23" tabindex="-1"></a>mcmc    <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(model, <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">&quot;b0&quot;</span>,  <span class="st">&quot;b1&quot;</span>, <span class="st">&quot;sigma&quot;</span>)) <span class="do">## Track key parameters</span></span>
+<span id="cb23-24"><a href="#cb23-24" tabindex="-1"></a><span class="do">## Compile the MCMC samplers into C++</span></span>
+<span id="cb23-25"><a href="#cb23-25" tabindex="-1"></a>cmcmc   <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc, <span class="at">project =</span> model)</span>
+<span id="cb23-26"><a href="#cb23-26" tabindex="-1"></a></span>
+<span id="cb23-27"><a href="#cb23-27" tabindex="-1"></a><span class="do">## Now run some iterations of the MCMC</span></span>
+<span id="cb23-28"><a href="#cb23-28" tabindex="-1"></a>cmcmc<span class="sc">$</span><span class="fu">run</span>(<span class="dv">1000</span>)</span>
+<span id="cb23-29"><a href="#cb23-29" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(cmcmc<span class="sc">$</span>mvSamples)</span>
+<span id="cb23-30"><a href="#cb23-30" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">as.mcmc</span>(samples)</span>
+<span id="cb23-31"><a href="#cb23-31" tabindex="-1"></a></span>
+<span id="cb23-32"><a href="#cb23-32" tabindex="-1"></a><span class="fu">plot</span>(out[,<span class="st">&#39;b0&#39;</span>])</span></code></pre></div>
 <p>Now let’s write our own Metropolis Hastings sampler to provide to our
 MCMC.</p>
 <div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a>My_RW_sampler <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
@@ -1021,6 +1020,94 @@ MCMC.</p>
 <span id="cb24-43"><a href="#cb24-43" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(cmcmc<span class="sc">$</span>mvSamples)</span>
 <span id="cb24-44"><a href="#cb24-44" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">as.mcmc</span>(samples)</span>
 <span id="cb24-45"><a href="#cb24-45" tabindex="-1"></a><span class="fu">plot</span>(out[,<span class="st">&#39;b0&#39;</span>])</span></code></pre></div>
+</div>
+<div id="basic-model-checking-with-dharma-and-nimble-bonus-2-if-time-allows" class="slide section level1">
+<h1>Basic model checking with <code>DHARMa</code> and Nimble (Bonus 2 if
+time allows)</h1>
+<p>We can build a posterior predictive nimbleFunction to interact with
+our model which can be used to interact with <code>DHARMa</code> for
+simulated residual checks. Simply need</p>
+<ul>
+<li><code>Simulated response vectors</code> which are posterior
+predictive draws of a Bayesian model,</li>
+<li><code>Observed data</code> in this case <code>y</code></li>
+<li><code>The predicted response from the model</code> in this case
+probability of occupancy x probability of observation.</li>
+</ul>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>ppSamplerNF <span class="ot">&lt;-</span> <span class="fu">nimbleFunction</span>(</span>
+<span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>          <span class="at">setup =</span> <span class="cf">function</span>(model, mcmc) {</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a>              dataNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getNodeNames</span>(<span class="at">dataOnly =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>              parentNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getParents</span>(dataNodes, <span class="at">stochOnly =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a>              <span class="fu">cat</span>(<span class="st">&quot;Stochastic parents of data are:&quot;</span>, <span class="fu">paste</span>(parentNodes, <span class="at">collapse =</span> <span class="st">&#39;,&#39;</span>), <span class="st">&quot;.</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb25-6"><a href="#cb25-6" tabindex="-1"></a>              simNodes <span class="ot">&lt;-</span> model<span class="sc">$</span><span class="fu">getDependencies</span>(parentNodes, <span class="at">self =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb25-7"><a href="#cb25-7" tabindex="-1"></a>              vars <span class="ot">&lt;-</span> mcmc<span class="sc">$</span>mvSamples<span class="sc">$</span><span class="fu">getVarNames</span>()  <span class="co"># need ordering of variables in mvSamples / samples matrix</span></span>
+<span id="cb25-8"><a href="#cb25-8" tabindex="-1"></a>              <span class="fu">cat</span>(<span class="st">&quot;Using posterior samples of:&quot;</span>, <span class="fu">paste</span>(vars, <span class="at">collapse =</span> <span class="st">&#39;,&#39;</span>), <span class="st">&quot;.</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb25-9"><a href="#cb25-9" tabindex="-1"></a>              n <span class="ot">&lt;-</span> <span class="fu">length</span>(model<span class="sc">$</span><span class="fu">expandNodeNames</span>(dataNodes, <span class="at">returnScalarComponents =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb25-10"><a href="#cb25-10" tabindex="-1"></a>          },</span>
+<span id="cb25-11"><a href="#cb25-11" tabindex="-1"></a>          <span class="at">run =</span> <span class="cf">function</span>(<span class="at">samples =</span> <span class="fu">double</span>(<span class="dv">2</span>)) {</span>
+<span id="cb25-12"><a href="#cb25-12" tabindex="-1"></a>              nSamp <span class="ot">&lt;-</span> <span class="fu">dim</span>(samples)[<span class="dv">1</span>]</span>
+<span id="cb25-13"><a href="#cb25-13" tabindex="-1"></a>              ppSamples <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="at">nrow =</span> nSamp, <span class="at">ncol =</span> n)</span>
+<span id="cb25-14"><a href="#cb25-14" tabindex="-1"></a>              <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nSamp) {</span>
+<span id="cb25-15"><a href="#cb25-15" tabindex="-1"></a>                    <span class="fu">values</span>(model, vars) <span class="ot">&lt;&lt;-</span> samples[i, ]</span>
+<span id="cb25-16"><a href="#cb25-16" tabindex="-1"></a>                    model<span class="sc">$</span><span class="fu">simulate</span>(simNodes, <span class="at">includeData =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb25-17"><a href="#cb25-17" tabindex="-1"></a>                    ppSamples[i, ] <span class="ot">&lt;-</span> <span class="fu">values</span>(model, dataNodes)</span>
+<span id="cb25-18"><a href="#cb25-18" tabindex="-1"></a>              }</span>
+<span id="cb25-19"><a href="#cb25-19" tabindex="-1"></a>              <span class="fu">returnType</span>(<span class="fu">double</span>(<span class="dv">2</span>))</span>
+<span id="cb25-20"><a href="#cb25-20" tabindex="-1"></a>              <span class="fu">return</span>(ppSamples)</span>
+<span id="cb25-21"><a href="#cb25-21" tabindex="-1"></a>          })</span></code></pre></div>
+<ul>
+<li>Let’s use the basic cars example again.</li>
+</ul>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" tabindex="-1"></a><span class="do">## Understanding MCMC with Nimble:</span></span>
+<span id="cb26-2"><a href="#cb26-2" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
+<span id="cb26-3"><a href="#cb26-3" tabindex="-1"></a>  <span class="do">## Choose priors:</span></span>
+<span id="cb26-4"><a href="#cb26-4" tabindex="-1"></a>  b0 <span class="sc">~</span> <span class="fu">dflat</span>() <span class="co"># dunif(-Inf, Inf) flat prior for intercept.</span></span>
+<span id="cb26-5"><a href="#cb26-5" tabindex="-1"></a>  b1 <span class="sc">~</span> <span class="fu">dnorm</span>(<span class="dv">0</span>, <span class="at">tau =</span> <span class="fl">0.1</span>)  <span class="co"># vague prior for slope.</span></span>
+<span id="cb26-6"><a href="#cb26-6" tabindex="-1"></a>  sigma <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">100</span>) <span class="co"># flat prior for residual standard error. dhalfflat() also works.</span></span>
+<span id="cb26-7"><a href="#cb26-7" tabindex="-1"></a>  </span>
+<span id="cb26-8"><a href="#cb26-8" tabindex="-1"></a>  <span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n ) {</span>
+<span id="cb26-9"><a href="#cb26-9" tabindex="-1"></a>    mu[i] <span class="ot">&lt;-</span> b0 <span class="sc">+</span> b1<span class="sc">*</span>speed[i]</span>
+<span id="cb26-10"><a href="#cb26-10" tabindex="-1"></a>    dist[i] <span class="sc">~</span> <span class="fu">dnorm</span>(mu[i], <span class="at">sd =</span> sigma)</span>
+<span id="cb26-11"><a href="#cb26-11" tabindex="-1"></a>  }</span>
+<span id="cb26-12"><a href="#cb26-12" tabindex="-1"></a>})</span>
+<span id="cb26-13"><a href="#cb26-13" tabindex="-1"></a></span>
+<span id="cb26-14"><a href="#cb26-14" tabindex="-1"></a>inits <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">b0 =</span> <span class="dv">0</span>, <span class="at">b1 =</span> <span class="dv">3</span>, <span class="at">sigma =</span> <span class="dv">3</span>)</span>
+<span id="cb26-15"><a href="#cb26-15" tabindex="-1"></a>constants <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(cars), <span class="at">speed =</span> cars<span class="sc">$</span>speed)</span>
+<span id="cb26-16"><a href="#cb26-16" tabindex="-1"></a></span>
+<span id="cb26-17"><a href="#cb26-17" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">nimbleModel</span>(<span class="at">code =</span> code, </span>
+<span id="cb26-18"><a href="#cb26-18" tabindex="-1"></a>                     <span class="at">data =</span> <span class="fu">list</span>(<span class="at">dist =</span> cars<span class="sc">$</span>dist), </span>
+<span id="cb26-19"><a href="#cb26-19" tabindex="-1"></a>                     <span class="at">constants =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(cars), <span class="at">speed =</span> cars<span class="sc">$</span>speed),                      <span class="at">inits =</span> <span class="fu">list</span>(<span class="at">b0 =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>), <span class="at">b1 =</span> <span class="fu">rnorm</span>(<span class="dv">1</span>), <span class="at">sigma =</span> <span class="fu">rgamma</span>(<span class="dv">1</span>,<span class="dv">1</span>)))</span>
+<span id="cb26-20"><a href="#cb26-20" tabindex="-1"></a></span>
+<span id="cb26-21"><a href="#cb26-21" tabindex="-1"></a>cmodel  <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(model)</span>
+<span id="cb26-22"><a href="#cb26-22" tabindex="-1"></a><span class="do">## Build the MCMC</span></span>
+<span id="cb26-23"><a href="#cb26-23" tabindex="-1"></a>mcmc    <span class="ot">&lt;-</span> <span class="fu">buildMCMC</span>(model, <span class="at">monitors =</span> <span class="fu">c</span>(<span class="st">&quot;b0&quot;</span>,  <span class="st">&quot;b1&quot;</span>, <span class="st">&quot;sigma&quot;</span>)) <span class="do">## Track key parameters</span></span>
+<span id="cb26-24"><a href="#cb26-24" tabindex="-1"></a><span class="do">## Compile the MCMC samplers into C++</span></span>
+<span id="cb26-25"><a href="#cb26-25" tabindex="-1"></a>cmcmc   <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(mcmc, <span class="at">project =</span> model)</span>
+<span id="cb26-26"><a href="#cb26-26" tabindex="-1"></a></span>
+<span id="cb26-27"><a href="#cb26-27" tabindex="-1"></a><span class="do">## Now run some iterations of the MCMC</span></span>
+<span id="cb26-28"><a href="#cb26-28" tabindex="-1"></a>cmcmc<span class="sc">$</span><span class="fu">run</span>(<span class="dv">10000</span>)</span>
+<span id="cb26-29"><a href="#cb26-29" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(cmcmc<span class="sc">$</span>mvSamples)</span>
+<span id="cb26-30"><a href="#cb26-30" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">as.mcmc</span>(samples)[<span class="sc">-</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5000</span>),] <span class="co"># Burn-in</span></span>
+<span id="cb26-31"><a href="#cb26-31" tabindex="-1"></a></span>
+<span id="cb26-32"><a href="#cb26-32" tabindex="-1"></a>ppsampler <span class="ot">&lt;-</span> <span class="fu">ppSamplerNF</span>(model, mcmc) </span>
+<span id="cb26-33"><a href="#cb26-33" tabindex="-1"></a>cppsampler <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(ppsampler)            </span>
+<span id="cb26-34"><a href="#cb26-34" tabindex="-1"></a>predictions <span class="ot">&lt;-</span> cppsampler<span class="sc">$</span><span class="fu">run</span>(<span class="at">samples =</span> out)</span>
+<span id="cb26-35"><a href="#cb26-35" tabindex="-1"></a></span>
+<span id="cb26-36"><a href="#cb26-36" tabindex="-1"></a><span class="do">## Get mean response:</span></span>
+<span id="cb26-37"><a href="#cb26-37" tabindex="-1"></a><span class="fu">values</span>(cmodel, <span class="fu">c</span>(<span class="st">&quot;b0&quot;</span>, <span class="st">&quot;b1&quot;</span>, <span class="st">&quot;sigma&quot;</span>)) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">16.195</span>, <span class="fl">3.843</span>, <span class="fl">15.920</span>)</span>
+<span id="cb26-38"><a href="#cb26-38" tabindex="-1"></a>cmodel<span class="sc">$</span><span class="fu">calculate</span>()</span>
+<span id="cb26-39"><a href="#cb26-39" tabindex="-1"></a>fitted <span class="ot">&lt;-</span> <span class="fu">values</span>(cmodel, <span class="st">&quot;mu&quot;</span>)</span>
+<span id="cb26-40"><a href="#cb26-40" tabindex="-1"></a></span>
+<span id="cb26-41"><a href="#cb26-41" tabindex="-1"></a><span class="fu">library</span>(DHARMa)</span>
+<span id="cb26-42"><a href="#cb26-42" tabindex="-1"></a>resids <span class="ot">&lt;-</span> <span class="fu">createDHARMa</span>(<span class="at">simulatedResponse =</span> <span class="fu">t</span>(predictions), </span>
+<span id="cb26-43"><a href="#cb26-43" tabindex="-1"></a>                           <span class="at">observedResponse =</span> cars<span class="sc">$</span>dist,</span>
+<span id="cb26-44"><a href="#cb26-44" tabindex="-1"></a>                           <span class="at">fittedPredictedResponse =</span> fitted,</span>
+<span id="cb26-45"><a href="#cb26-45" tabindex="-1"></a>                           <span class="at">integerResponse =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb26-46"><a href="#cb26-46" tabindex="-1"></a><span class="fu">plot</span>(resids)</span>
+<span id="cb26-47"><a href="#cb26-47" tabindex="-1"></a></span>
+<span id="cb26-48"><a href="#cb26-48" tabindex="-1"></a><span class="do">## Compare with lm:</span></span>
+<span id="cb26-49"><a href="#cb26-49" tabindex="-1"></a>fit.lm <span class="ot">&lt;-</span> <span class="fu">lm</span>(dist <span class="sc">~</span> speed, <span class="at">data =</span> cars)</span>
+<span id="cb26-50"><a href="#cb26-50" tabindex="-1"></a>resids.fit <span class="ot">&lt;-</span> <span class="fu">simulateResiduals</span>(<span class="at">fittedModel =</span> fit.lm, <span class="at">plot =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
 </div>
 
   <!-- dynamically load mathjax for compatibility with self-contained -->

@@ -1,5 +1,5 @@
 ---
-title: "Other Methods in NIMBLE"
+title: "Numerical Methods in NIMBLE"
 subtitle: "NIMBLE 2024 TWS Workshop"
 author: "NIMBLE Development Team"
 date: "October 2024"
@@ -44,7 +44,7 @@ where
 - $\mathbf{u}$: a vector of random effects
 - $\mathbf{y}$: a vector of data
 - $\widehat{\mathbf{u}}$: MLE of random effects for a given value of $\boldsymbol{\theta}$
-- $g(\mathbf{\widehat{u}}|\boldsymbol{\theta})$: is a Gaussian approximation of the random effects evaluated at their mean.
+- $g(\mathbf{\widehat{u}}|\mathbf{y},\boldsymbol{\theta})$: is a Gaussian approximation of the random effects evaluated at their mean.
  
 
 Laplace approximation
@@ -55,23 +55,8 @@ We see Laplace approximation used in software such as
 - INLA
 - TMB
 - glmmTMB
-- lmer
+- lme4
 - and many more.
-
-Laplace in glmmTMB
-====
-
-Consider the `data(ChickWeight)` example where we take repeated measurements over time of chicks and track their weight. If we use the R package `glmmTMB` we can fit this as a linear mixed model.
-
-For comparability with nimble we will not use restricted maximum likelihood (REML) for fitting the variance terms.
-
-```{r}
-data(ChickWeight)
-library(glmmTMB)
-
-fit.glmmtmb <- glmmTMB(weight ~ Time + Diet + (1|Chick), data = ChickWeight, REML = FALSE)
-summary(fit.glmmtmb)
-```
 
 Laplace in NIMBLE
 ====
@@ -101,51 +86,77 @@ res <- runLaplace(laplace, # Laplace algorithm
                   )
 ```
 
-Build LMM in NIMBLE
+Occupancy Model with Random Effects
 ====
 
+Simulate some data;
+```{r}
+set.seed(123)
+## number of sites
+nLocs <- 5
+nSites <- 20
+N <- nLocs*nSites
+## number of observation periods
+T <- 6
+
+
+## simulate z (occupied status),
+## and y (encounter histories)
+z <- matrix(NA, nrow = nSites, ncol = nLocs)
+y <- array(NA, c(nSites, nLocs, T))
+for( i in 1:nSites ){
+  pOcc <- expit(-1 + rnorm(1, 0,0.25))
+  pObs <- expit(1 + rnorm(1, 0, 0.1))
+  for( j in 1:nLocs ) {
+      z[i,j] <- rbinom(1, size=1, prob=pOcc)
+      y[i, j, 1:T] <- rbinom(T, size=1, prob=z[i,j]*pObs)
+  }
+}
+```
+
 ```{r, eval = FALSE}
-lmm <- nimbleCode({
+occmodel <- nimbleCode({
+  beta0_det ~ dflat()
+  beta0_occ ~ dflat()
+
+  sigma_occ ~ dhalfflat()
+  sigma_obs ~ dhalfflat()
   
-  for( i in 1:nbeta ) beta[i] ~ dflat()
-  
-  sigma ~ dhalfflat()
-  sigma_re ~ dhalfflat()
-  
-  for( i in 1:nchicks ){
-    re[i] ~ dnorm(0, sd = sigma_re)
+  for( i in 1:nSites ){
+    z_re[i] ~ dnorm(0, sd = sigma_occ)
+    pOcc[i] <- expit(beta0_occ + z_re[i])
+    y_re[i] ~ dnorm(0, sd = sigma_obs)
+    pObs[i] <- expit(beta0_det + y_re[i])
+    
+    for( j in 1:nLocs ){
+      y[i,j,1:T] ~ dOcc_s(pOcc[i], pObs[i], len=T)
+    }
   }
-  
-  for( i in 1:n ){
-    mu[i] <- sum(X[i,1:nbeta] * beta[1:nbeta]) + re[Chick[i]]
-    weight[i] ~ dnorm(mu[i], sd = sigma)
-  }
-  
 })
 
-X <- model.matrix(~Time + factor(Diet), data = ChickWeight)
-chick_constants <- list(n = nrow(ChickWeight),
-    nbeta = ncol(X), 
-    X = X, 
-    nchicks = max(as.integer(ChickWeight$Chick)), 
-    Chick = as.integer(ChickWeight$Chick))
+occ_constants <- list(nSites = nSites, nLocs = nLocs, T = T)
 
-chick_inits <- function(){
-  list(sigma = rgamma(1,5,2), sigma_re = rgamma(1, 0.5, 2), re = rnorm(chick_constants$nchicks), beta = rnorm(chick_constants$nbeta))
+occ_inits <- function(){
+  list(sigma_occ = rgamma(1,1,1), sigma_obs = rgamma(1, 1, 1), z_re = rnorm(nrow(z)), y_re = rnorm(nrow(z)), beta0_det = 0, beta_occ = 0)
 }
 
-model <- nimbleModel(lmm, 
-                      data = list(weight = ChickWeight$weight), 
-                      constants = chick_constants,
-                      inits = chick_inits(), buildDerivs = TRUE)
+model <- nimbleModel(occmodel, 
+                      data = list(y = y), 
+                      constants = occ_constants,
+                      inits = occ_inits(), buildDerivs = TRUE)
 cmodel <- compileNimble(model)
-
 laplace <- buildLaplace(model)
+
+pars <- laplace$getNodeNamesVec()
+laplace$calcLogLik(p = values(model, pars))
+
 claplace <- compileNimble(laplace, project = model)
 res <- runLaplace(claplace)
+res$summary$params
 
-res$summary$params[grepl("beta", rownames(res$summary$params)),]
+values(cmodel, pars)
 ```
+
 Some notes about NIMBLE Laplace
 ====
 
@@ -165,10 +176,30 @@ fit.nlminb <- claplace$findMLE(method = "nlminb", hessian = FALSE)
 fit.nlminb$par
 ```
 
-Additional Options
+Additional Options (AGHQ)
 ====
 
-**Option: integrate out all latent states (`'re[1:50]'`) and use MCMC for parameters only (`'beta'`, `'sigma', 'sigma_re'`)**
+Adaptive Gauss-Hermite Quadrature (AGHQ) is a generalization of Laplace that includes additional integration nodes. When Laplace is not very accurate, increasing the number of integration points can improve estimation.
+
+Available as `buildAGHQ`, or as part of `Laplace`.
+
+Good check to see if Laplace is accurate.
+
+```{r, eval = FALSE}
+claplace$updateSettings(nQuad = 1)
+claplace$calcLogLik(p = values(cmodel, pars))
+
+claplace$updateSettings(nQuad = 3)
+claplace$calcLogLik(p = values(cmodel, pars))
+
+claplace$updateSettings(nQuad = 11)
+claplace$calcLogLik(p = values(cmodel, pars))
+```
+
+Additional Options (MCMC)
+====
+
+**Option: integrate out all latent states and use MCMC for parameters only**
 
 - Write a custom log-likelihood function
 ```{r, eval=FALSE}
@@ -183,13 +214,13 @@ llFun_Laplace <- nimbleFunction(
     return(ll)
   }
 )
-randomEffectsNodes <- "re[1:50]"
-paramNodes <- c("beta", "sigma", "sigma_re")
+randomEffectsNodes <- c("y_re", "z_re")
+paramNodes <- pars
 calcNodes <- model$getDependencies(randomEffectsNodes)
 ## Generate the custom log-likelihood function for MCMC
 Rll_Laplace <- llFun_Laplace(model, paramNodes, randomEffectsNodes, calcNodes)
 ```
-- Specify a `RW_llFunction` sampler for parameter nodes `'sigma'`, `'sigma_re'` and `'beta'`.
+- Specify a `RW_llFunction` sampler for parameter nodes.
 
 ```{r, eval=FALSE}
 mcmcConf <- configureMCMC(model, nodes = NULL)
@@ -202,7 +233,7 @@ mcmc <- buildMCMC(mcmcConf)
 cmcmc <- compileNimble(mcmc)
 fit.mcmc <- runMCMC(cmcmc, niter = 10000, 
                           nchains = 3, nburnin = 5000, samplesAsCodaMCMC = TRUE)
-plot(fit.mcmc[,c('beta[1]', 'beta[2]')])
+plot(fit.mcmc[,c('beta0_det', 'beta0_occ')])
 ```
 
 
@@ -215,3 +246,14 @@ Some notes about Laplace within MCMC
 - Other samplers using Laplace/other custom likelihood functions could be set up similarly but will need you to modify the original samplers' code.
 - Evaluating a single Laplace approximation is not expensive, but it is a different story when being involved in MCMC running a large number of iterations. Thus the MCMC+Laplace workflow would be ideal for models with high-dimensional and complex random effects structures.
 
+
+Future Developments for `nimbleQuad`
+====
+
+- Additional quadrature rules
+
+More  numerical integration within models. E.g. sparse quadrature grids for when Laplace is ineffective.
+
+- Approximate Bayesian inference through numerical integration (INLA like)
+
+Similar to buildLaplace but instead of the MLE get the maximum a posteriori mode (MAP) and approximate credible intervals.

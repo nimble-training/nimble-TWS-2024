@@ -482,7 +482,6 @@ code <- nimbleCode({
   }
 })
 
-data <- 
 inits <- list(b0 = 0, b1 = 3, sigma = 3)
 constants <- list(n = nrow(cars), speed = cars$speed)
 
@@ -552,4 +551,93 @@ cmcmc$run(1000)
 samples <- as.matrix(cmcmc$mvSamples)
 out <- as.mcmc(samples)
 plot(out[,'b0'])
+```
+
+Basic model checking with `DHARMa` and Nimble (Bonus 2 if time allows)
+====
+
+We can build a posterior predictive nimbleFunction to interact with our model which can be used to interact with `DHARMa` for simulated residual checks. Simply need
+
+- `Simulated response vectors` which are posterior predictive draws of a Bayesian model,
+- `Observed data` in this case `y`
+- `The predicted response from the model` in this case probability of occupancy x probability of observation.
+
+```{r, eval = FALSE}
+ppSamplerNF <- nimbleFunction(
+          setup = function(model, mcmc) {
+              dataNodes <- model$getNodeNames(dataOnly = TRUE)
+              parentNodes <- model$getParents(dataNodes, stochOnly = TRUE)
+              cat("Stochastic parents of data are:", paste(parentNodes, collapse = ','), ".\n")
+              simNodes <- model$getDependencies(parentNodes, self = FALSE)
+              vars <- mcmc$mvSamples$getVarNames()  # need ordering of variables in mvSamples / samples matrix
+              cat("Using posterior samples of:", paste(vars, collapse = ','), ".\n")
+              n <- length(model$expandNodeNames(dataNodes, returnScalarComponents = TRUE))
+          },
+          run = function(samples = double(2)) {
+              nSamp <- dim(samples)[1]
+              ppSamples <- matrix(nrow = nSamp, ncol = n)
+              for(i in 1:nSamp) {
+                    values(model, vars) <<- samples[i, ]
+                    model$simulate(simNodes, includeData = TRUE)
+                    ppSamples[i, ] <- values(model, dataNodes)
+              }
+              returnType(double(2))
+              return(ppSamples)
+          })
+```
+
+- Let's use the basic cars example again.
+
+```{r, eval = FALSE}
+## Understanding MCMC with Nimble:
+code <- nimbleCode({
+  ## Choose priors:
+  b0 ~ dflat() # dunif(-Inf, Inf) flat prior for intercept.
+  b1 ~ dnorm(0, tau = 0.1)  # vague prior for slope.
+  sigma ~ dunif(0, 100) # flat prior for residual standard error. dhalfflat() also works.
+  
+  for( i in 1:n ) {
+    mu[i] <- b0 + b1*speed[i]
+    dist[i] ~ dnorm(mu[i], sd = sigma)
+  }
+})
+
+inits <- list(b0 = 0, b1 = 3, sigma = 3)
+constants <- list(n = nrow(cars), speed = cars$speed)
+
+model <- nimbleModel(code = code, 
+                     data = list(dist = cars$dist), 
+                     constants = list(n = nrow(cars), speed = cars$speed),                      inits = list(b0 = rnorm(1), b1 = rnorm(1), sigma = rgamma(1,1)))
+
+cmodel  <- compileNimble(model)
+## Build the MCMC
+mcmc    <- buildMCMC(model, monitors = c("b0",  "b1", "sigma")) ## Track key parameters
+## Compile the MCMC samplers into C++
+cmcmc   <- compileNimble(mcmc, project = model)
+
+## Now run some iterations of the MCMC
+cmcmc$run(10000)
+samples <- as.matrix(cmcmc$mvSamples)
+out <- as.mcmc(samples)[-(1:5000),] # Burn-in
+
+ppsampler <- ppSamplerNF(model, mcmc) 
+cppsampler <- compileNimble(ppsampler)            
+predictions <- cppsampler$run(samples = out)
+
+## Get mean response:
+values(cmodel, c("b0", "b1", "sigma")) <- c(-16.195, 3.843, 15.920)
+cmodel$calculate()
+fitted <- values(cmodel, "mu")
+
+library(DHARMa)
+resids <- createDHARMa(simulatedResponse = t(predictions), 
+                           observedResponse = cars$dist,
+                           fittedPredictedResponse = fitted,
+                           integerResponse = FALSE)
+plot(resids)
+
+## Compare with lm:
+fit.lm <- lm(dist ~ speed, data = cars)
+resids.fit <- simulateResiduals(fittedModel = fit.lm, plot = TRUE)
+
 ```
