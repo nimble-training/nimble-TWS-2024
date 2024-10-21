@@ -16,7 +16,7 @@ slides > slide {
 </style>
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE, dvi=36)
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, dpi=36)
 library(nimble)
 library(compareMCMCs)
 recalculate <- TRUE
