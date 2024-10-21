@@ -28,7 +28,7 @@ Tuesday October 22nd:
 7. (1:00 pm - 1:50 pm) Strategies for improving MCMC
 8. (2:00 pm - 2:50 pm) Special modeling components and methods (spatial, Bayesian non-parametrics, and reversible jump for variable selection)
 9. (3:00 pm - 3:50 pm) Laplace approximation and other numerical methods in NIMBLE
-10. (4:00 pm - 4:50 pm) Writing new samplers and algorithms
+10. (4:00 pm - 4:50 pm) More nimble programming features and techniques
 
 ## Help with NIMBLE
 
