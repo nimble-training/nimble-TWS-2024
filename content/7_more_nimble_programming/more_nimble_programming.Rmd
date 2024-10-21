@@ -1,0 +1,412 @@
+---
+title: "More nimble programming features and techniques"
+subtitle: "TWS 2024 Workshop"
+author: "NIMBLE Development Team"
+date: "October 2024"
+output:
+  slidy_presentation: default
+  beamer_presentation: default
+---
+
+<style>
+slides > slide {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, dpi=36)
+library(nimble)
+recalculate <- TRUE
+```
+
+
+# Agenda
+
+In this module we will cover:
+
+- Calling R functions from (compiled) nimbleFunctions.
+- Writing nimbleFunctions that use `setup` code and use models.
+
+  - Example: maximum likelihood (without random effects / latent states)
+  
+- Using the Automatic Differentiation system to get derivatives.
+- Holding large data objects outside of models.
+- Writing MCMC samplers and using them within nimble's MCMC system.
+
+# Calling R functions from (compiled) nimbleFunctions.
+
+- R is a slow, interpreted (i.e. not compiled) language. 
+- There is no general R compiler and it would be extremely difficult to make one. For example, code itself is an object in the language.
+- That's why the nimble compiler handles only a small subset of R syntax, mostly math and basic flow control.
+- Sometimes, you really want to call something in R from model code that you could not easily code directly in a nimbleFunction. Example: least-cost path distance.
+- Use `nimbleRcall` for this. There will be computational overhead, but you can get what you want.
+
+# Example of `nimbleRcall`
+
+Let's say we are calculating Gaussian decay with distance from a latent location to a set of fixed locations. For example, in spatial capture-recapture there is a latent location for each animal's activity center and the fixed locations are for detectors such as camera traps.
+
+Here is a basic version of a model with only this calculation. (Notice we can make a model object even without stochastic nodes or data nodes. We will just use it as a calculator.)
+
+```{r, eval=recalculate}
+dd_code1 <- nimbleCode({
+  # s[1:2] will be the latent location
+  # rho will be a decay parameter 
+  for(i in 1:num_det) {
+    d2[i] <- (s[1] - x[i,1])^2 + (s[2] - x[i,2])^2
+    w[i] <- exp(-d2[i] / rho) 
+  }
+})
+```
+
+Set up a set of random locations.
+```{r, eval=recalculate}
+set.seed(1)
+num_det <- 5
+x <- matrix(runif(10, -100, 100), ncol=2)
+s <- c(25, 75)
+rho <- 2500
+```
+
+```{r, eval=recalculate}
+dd_model1 <- nimbleModel(dd_code1,
+                         constants=list(num_det = num_det, x = x))
+values(dd_model1, c("s[1:2]", "rho")) <- c(s, rho)
+dd_model1$d2 # Should be NA because these are not calculated yet
+dd_model1$calculate("d2")
+dd_model1$d2 # Now they are calculated
+dd_model1$w # Not yet calculated
+dd_model1$calculate("w")
+dd_model1$w # Nw they are calculated
+# we could do the same steps with the compiled model
+Cdd_model1 <- compileNimble(dd_model1)
+```
+
+# Example of `nimbleRcall` (cont)
+
+Let's say that instead of the simple case here, we really have something so involved that we need to call R to do it.
+
+```{r, eval=recalculate}
+calc_w <- function(s, x, rho) {
+  num_det <- nrow(x)
+  d2 <- w <- numeric(num_det)
+  for(i in 1:num_det) {
+    d2[i] <- (s[1] - x[i,1])^2 + (s[2] - x[i,2])^2
+    w[i] <- exp(-d2[i] / rho) 
+  }
+  w
+}
+# check that it works
+calc_w(s, x, rho)
+```
+
+```{r, eval=recalculate}
+R_calc_w <- nimbleRcall(function(s = double(1), x = double(2), rho = double(0)) {},
+                        returnType = double(1),
+                        "calc_w"
+                        )
+dd_code2 <- nimbleCode({
+  # s[1:2] will be the latent location
+  # rho will be a decay parameter 
+  w[1:num_det] <- R_calc_w(s[1:2], x[1:num_det, 1:2], rho)
+})
+
+dd_model2 <- nimbleModel(dd_code2,
+                         constants=list(num_det = num_det, x = x))
+values(dd_model2, c("s[1:2]", "rho")) <- c(s, rho)
+Cdd_model2 <- compileNimble(dd_model2)
+Cdd_model2$w # Not yet calculated
+Cdd_model2$calculate("w")
+Cdd_model2$w # Nw they are calculated
+# try this
+# debug(calc_w)
+# Cdd_model2$calculate("w")
+# then use "n" for the next line or "c" to continue without stopping again.
+# Inspect variables at any time.
+```
+
+# Example of `nimbleRcall` (cont)
+
+### Side note: We could have vectorized this calculation in the model code:
+
+```{r eval = recalculate}
+dd_code3 <- nimbleCode({
+  # s[1:2] will be the latent location
+  # rho will be a decay parameter 
+  w[1:num_det] <- exp( - ((s[1] - x[1:num_det,1])^2 +
+                          (s[2] - x[1:num_det,2])^2  )/rho)
+})
+dd_model3 <- nimbleModel(dd_code3,
+                         constants=list(num_det = num_det, x = x))
+values(dd_model3, c("s[1:2]", "rho")) <- c(s, rho)
+dd_model3$calculate("w")
+dd_model3$w
+```
+
+# nimbleFunctions that use `setup` code
+
+So far we have seen the simple version of nimbleFunctions. They use a special subset of R-like syntax and are strongly typed (unlike R in general).
+
+When a nimbleFunction contains a `setup` function, it can retain variables between calls. (Internally, it becomes a class definition, not simply a function.)
+
+Here is a toy example (with no model).
+
+```{r, eval=recalculate}
+foo <- nimbleFunction(
+  setup = function(x) {
+    my_x <- x # assume x is a vector
+  },
+  run = function(v = double()) {
+    return(v*my_x)
+    returnType(double(1))
+  }
+)
+foo1 <- foo(1:5)
+foo1$run(2)
+foo2 <- foo(101:105)
+foo2$run(2)
+```
+
+`my_x` is automatically retained (as a "member variable") because it appears in `setup` and is used in `run`. (Hence, there is no need to explicitly declare member variables. Just use them.)
+
+Actually, we could have used simply `setup = function(x){}` and then used `x` in `run`.
+
+We can have more functions like `run` called "methods" by providing a `methods` argument.
+
+# nimbleFunctions that use `setup` code (cont)
+
+Let's compile `foo1` and `foo2`
+
+```{r, eval=recalculate}
+comp <- compileNimble(foo1, foo2)
+Cfoo1 <- comp$foo1
+Cfoo2 <- comp$foo2
+foo1$run(2)
+foo2$run(2)
+```
+
+# nimbleFunctions that use models.
+
+Now let's make a nimbleFunction that uses a model. We'll make a simple log likelihood calculator (assuming no need to integrate over random effects or latent states).
+
+```{r, eval=recalculate}
+logLik_NF <- nimbleFunction(
+  setup = function(model, paramNodes) {
+    if(missing(paramNodes)) paramNodes <- model$getNodeNames(topOnly = TRUE)
+    calcNodes <- model$getDependencies(paramNodes, self=FALSE)
+  },
+  methods = list(
+    calcLogLik = function(v = double(1)) {
+      values(model, paramNodes) <<- v
+      ll <- model$calculate(calcNodes)
+      return(ll)
+      returnType(double())
+    }
+  )
+)
+```
+
+# nimbleFunctions that use use models (cont).
+
+Let's make a toy logistic regression model.
+
+```{r eval=recalculate}
+set.seed(1)
+x <- rnorm(100)
+eta <- 0.2 + 0.5 * x
+p <- expit(eta)
+y <- rbinom(100, size = 1, prob = p)
+plot(x, y)
+```
+
+Here is the model fit by `glm`
+
+```{r eval=recalculate}
+summary(glm(y ~ x, family = binomial))
+```
+
+# nimbleFunctions that use use models (cont).
+
+Now let's fit the model by maximizing the log likelihood from our calculator.
+
+```{r eval=recalculate}
+m <- nimbleModel(
+  nimbleCode({
+    intercept ~ dnorm(0, sd = 100) # The priors are not necessary but help with the default paramNodes
+    slope ~ dnorm(0, sd = 100)
+    for(i in 1:N) {
+      y[i] ~ dbern( expit(intercept + slope*x[i])  )
+    }
+  }),
+  data = list(x = x, y = y),
+  constants = list(N = 100)
+)
+
+m$getNodeNames(topOnly=TRUE)
+my_ll <- logLik_NF(m)
+my_ll$calcLogLik(c(.3, .3))
+# We could do this uncompiled for debugging (but slow)
+MLE <- optim(c(0,0), my_ll$calcLogLik, control=list(fnscale = -1))
+MLE
+```
+
+The parameters match the result from `glm`. We are finding the same MLE. 
+
+We could use the compiled versions:
+
+```{r, eval=recalculate}
+comp <- compileNimble(m, my_ll)
+MLE <- optim(c(0,0), comp$my_ll$calcLogLik, control=list(fnscale = -1)) # much faster
+MLE
+```
+
+# Getting derivatives
+
+```{r, eval=recalculate}
+logLik_NF2 <- nimbleFunction(
+  setup = function(model, paramNodes) {
+    if(missing(paramNodes)) paramNodes <- model$getNodeNames(topOnly = TRUE)
+    calcNodes <- model$getDependencies(paramNodes, self=FALSE)
+    # To use derivatives involving a model, we need some special steps
+    derivsInfo <- makeModelDerivsInfo(m, paramNodes, calcNodes)
+    updateNodes <- derivsInfo$updateNodes
+    constantNodes <- derivsInfo$constantNodes
+  },
+  methods = list(
+    calcLogLik = function(v = double(1)) {
+      values(model, paramNodes) <<- v
+      ll <- model$calculate(calcNodes)
+      return(ll)
+      returnType(double())
+    },
+    derivsLogLik = function(v = double(1), order = integer()) {
+      ans <- nimDerivs(calcLogLik(v), wrt = 1:length(v), order = order,
+                       model = m, updateNodes = updateNodes, constantNodes = constantNodes)
+      return(ans)
+      returnType(ADNimbleList())
+    },
+    gradLogLik = function(v = double(1)) {
+      ans <- derivsLogLik(v, 1)$jacobian[1,]
+      return(ans)
+      returnType(double(1))
+    },
+    hessianLogLik = function(v = double(1)) {
+      ans <- derivsLogLik(v, 2)$hessian[,,1]
+      return(ans)
+      returnType(double(2))
+    }
+  ),
+  buildDerivs ='calcLogLik'
+)
+```
+
+# Getting derivatives (cont)
+
+Before compiling (below), we need to make a new version of the model with derivatives enabled.
+
+```{r eval=recalculate}
+m <- nimbleModel(
+  nimbleCode({
+    intercept ~ dnorm(0, sd = 100) # The priors are not necessary but help with the default paramNodes
+    slope ~ dnorm(0, sd = 100)
+    for(i in 1:N) {
+      y[i] ~ dbern( expit(intercept + slope*x[i])  )
+    }
+  }),
+  data = list(x = x, y = y),
+  constants = list(N = 100),
+  buildDerivs=TRUE
+)
+```
+
+```{r eval=recalculate}
+my_ll2 <- logLik_NF2(m)
+```
+
+
+# Getting derivatives (cont)
+
+We can run uncompiled. (The derivatives will be based on finite differences)
+```{r eval=recalculate}
+my_ll2$calcLogLik(c(.2, .3))
+my_ll2$gradLogLik(c(.2, .3))
+my_ll2$hessianLogLik(c(.2, .3))
+```
+
+And we can run compiled. (The derivatives will be exact to computer precision.)
+
+```{r eval=recalculate}
+Cm <- compileNimble(m)
+ # Slower compilation when derivatives are enabled
+Cmy_ll2 <- compileNimble(my_ll2, project = m)
+Cmy_ll2$calcLogLik(c(.2, .3))
+Cmy_ll2$gradLogLik(c(.2, .3))
+Cmy_ll2$hessianLogLik(c(.2, .3))
+```
+
+# Getting derivatives (cont)
+
+Let's get the MLE faster and get the standard error estimates from the Hessian matrix.
+
+```{r eval=recalculate}
+MLE2 <- optim(c(0,0), Cmy_ll2$calcLogLik,
+              gr = Cmy_ll2$gradLogLik,
+              method = "BFGS",
+              control=list(fnscale = -1))
+MLE2
+hessian <- Cmy_ll2$hessianLogLik(MLE2$par)
+vcov <- solve(-hessian)
+vcov
+sqrt(diag(vcov)) # matches the standard errors from glm
+```
+
+# Holding large data objects outside of models.
+
+Sometimes there is a large data object such as a distance matrix that is constant and introduces a lot of overhead and memory use in model building and compilation. 
+
+Here is a method to do the calculations with such objects outside of the model object.
+
+Let's go back to the Gaussian decay with distance and assume we want to hold the detector locations `x` outside the model.
+
+Re-create the same setup.
+```{r, eval=recalculate}
+set.seed(1)
+num_det <- 5
+x <- matrix(runif(10, -100, 100), ncol=2)
+s <- c(25, 75)
+rho <- 2500
+```
+
+
+```{r eval = recalculate}
+calc_w_NF <- nimbleFunction(
+  setup = function(x){},
+  run = function(s = double(1), rho = double()) {
+    w <- exp( - ((s[1] - x[,1])^2 +
+                 (s[2] - x[,2])^2  )/rho)
+    return(w)
+    returnType(double(1))
+  })
+
+calc_w <- calc_w_NF(x)
+
+dd_code4 <- nimbleCode({
+  # s[1:2] will be the latent location
+  # rho will be a decay parameter 
+  w[1:num_det] <- calc_w$run(s[1:2], rho)
+})
+
+dd_model4 <- nimbleModel(dd_code4,
+                         constants=list(num_det = num_det))
+values(dd_model4, c("s[1:2]", "rho")) <- c(s, rho)
+                                        # Let's compile this one to see that it works
+Cdd_model4 <- compileNimble(dd_model4)
+Cdd_model4$w # not calculated yet
+Cdd_model4$calculate("w")
+Cdd_model4$w
+```
+
+# Writing MCMC samplers and using them within nimble's MCMC system.
+
+Let's look back to the end of module 4.
