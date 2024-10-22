@@ -912,7 +912,7 @@ which take values of 1,2 or 3.</p>
 <h1>Using the new distribution</h1>
 <p>One can then immediately use the distribution in a model. NIMBLE will
 compile the user-defined distribution together with everything else, as
-if <code>dnormmix2</code> were a distribution that NIMBLE provides.</p>
+if <code>doccmix</code> were a distribution that NIMBLE provides.</p>
 <div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="do">## 3-Group Finite Mixture Occupancy Model - marginalized</span></span>
 <span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>code <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>    pOcc <span class="sc">~</span> <span class="fu">dunif</span>(<span class="dv">0</span>, <span class="dv">1</span>)</span>

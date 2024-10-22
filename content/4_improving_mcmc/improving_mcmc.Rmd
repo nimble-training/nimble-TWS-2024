@@ -425,7 +425,7 @@ assign('roccmix', roccmix, .GlobalEnv)
 Using the new distribution
 ====
 
-One can then immediately use the distribution in a model. NIMBLE will compile the user-defined distribution together with everything else, as if `dnormmix2` were a distribution that NIMBLE provides.
+One can then immediately use the distribution in a model. NIMBLE will compile the user-defined distribution together with everything else, as if `doccmix` were a distribution that NIMBLE provides.
 
 ```{r, eval = recalculate}
 ## 3-Group Finite Mixture Occupancy Model - marginalized
