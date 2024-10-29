@@ -614,27 +614,28 @@ mean.</li>
 <div id="occupancy-model-with-random-effects" class="slide section level1">
 <h1>Occupancy Model with Random Effects</h1>
 <p>Simulate some data;</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="do">## number of sites</span></span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>nLocs <span class="ot">&lt;-</span> <span class="dv">5</span></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>nSites <span class="ot">&lt;-</span> <span class="dv">20</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>N <span class="ot">&lt;-</span> nLocs<span class="sc">*</span>nSites</span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="do">## number of observation periods</span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>T <span class="ot">&lt;-</span> <span class="dv">6</span></span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a></span>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(nimbleEcology)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="do">## number of sites</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>nLocs <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>nSites <span class="ot">&lt;-</span> <span class="dv">20</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>N <span class="ot">&lt;-</span> nLocs<span class="sc">*</span>nSites</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="do">## number of observation periods</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>T <span class="ot">&lt;-</span> <span class="dv">6</span></span>
 <span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="do">## simulate z (occupied status),</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="do">## and y (encounter histories)</span></span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> nSites, <span class="at">ncol =</span> nLocs)</span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="fu">c</span>(nSites, nLocs, T))</span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a><span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nSites ){</span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>  pOcc <span class="ot">&lt;-</span> <span class="fu">expit</span>(<span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>,<span class="fl">0.25</span>))</span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  pObs <span class="ot">&lt;-</span> <span class="fu">expit</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="fl">0.1</span>))</span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  <span class="cf">for</span>( j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nLocs ) {</span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>      z[i,j] <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="dv">1</span>, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span>pOcc)</span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>      y[i, j, <span class="dv">1</span><span class="sc">:</span>T] <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(T, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span>z[i,j]<span class="sc">*</span>pObs)</span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>  }</span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="do">## simulate z (occupied status),</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a><span class="do">## and y (encounter histories)</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="cn">NA</span>, <span class="at">nrow =</span> nSites, <span class="at">ncol =</span> nLocs)</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">array</span>(<span class="cn">NA</span>, <span class="fu">c</span>(nSites, nLocs, T))</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="cf">for</span>( i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nSites ){</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  pOcc <span class="ot">&lt;-</span> <span class="fu">expit</span>(<span class="sc">-</span><span class="dv">1</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>,<span class="fl">0.25</span>))</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  pObs <span class="ot">&lt;-</span> <span class="fu">expit</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="dv">1</span>, <span class="dv">0</span>, <span class="fl">0.1</span>))</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>  <span class="cf">for</span>( j <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>nLocs ) {</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>      z[i,j] <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(<span class="dv">1</span>, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span>pOcc)</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>      y[i, j, <span class="dv">1</span><span class="sc">:</span>T] <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(T, <span class="at">size=</span><span class="dv">1</span>, <span class="at">prob=</span>z[i,j]<span class="sc">*</span>pObs)</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>  }</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>}</span></code></pre></div>
 <div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>occmodel <span class="ot">&lt;-</span> <span class="fu">nimbleCode</span>({</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  beta0_det <span class="sc">~</span> <span class="fu">dflat</span>()</span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  beta0_occ <span class="sc">~</span> <span class="fu">dflat</span>()</span>
@@ -672,9 +673,20 @@ mean.</li>
 <span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a></span>
 <span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>claplace <span class="ot">&lt;-</span> <span class="fu">compileNimble</span>(laplace, <span class="at">project =</span> model)</span>
 <span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">runLaplace</span>(claplace)</span>
-<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a>res<span class="sc">$</span>summary<span class="sc">$</span>params</span>
-<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a></span>
-<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="fu">values</span>(cmodel, pars)</span></code></pre></div>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a><span class="do">## MLE</span></span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a>res<span class="sc">$</span>summary<span class="sc">$</span>params</span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a></span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="do">## Get random effects</span></span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>res<span class="sc">$</span>summary<span class="sc">$</span>randomEffects</span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a><span class="fu">values</span>(cmodel, pars)</span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a></span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a><span class="do">## Just manually find MLE</span></span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">findMLE</span>()</span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a></span>
+<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a><span class="do">## Find marginalized log likelihood</span></span>
+<span id="cb5-51"><a href="#cb5-51" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">calcLaplace</span>(<span class="fu">values</span>(cmodel,pars))</span></code></pre></div>
 </div>
 <div id="some-notes-about-nimble-laplace" class="slide section level1">
 <h1>Some notes about NIMBLE Laplace</h1>
@@ -700,7 +712,7 @@ incorporate additional optimisation methods (e.g. those in
 <code>buildLaplace</code>.</p></li>
 </ul>
 <div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>claplace<span class="sc">$</span><span class="fu">updateSettings</span>(<span class="at">innerOptimMethod =</span> <span class="st">&quot;nlminb&quot;</span>, <span class="at">useInnerCache =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>fit.nlminb <span class="ot">&lt;-</span> claplace<span class="sc">$</span><span class="fu">findMLE</span>(<span class="at">method =</span> <span class="st">&quot;nlminb&quot;</span>, <span class="at">hessian =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>fit.nlminb <span class="ot">&lt;-</span> claplace<span class="sc">$</span><span class="fu">findMLE</span>(<span class="at">hessian =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>fit.nlminb<span class="sc">$</span>par</span></code></pre></div>
 </div>
 <div id="additional-options-aghq" class="slide section level1">

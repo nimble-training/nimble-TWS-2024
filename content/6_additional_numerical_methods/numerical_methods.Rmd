@@ -91,6 +91,7 @@ Occupancy Model with Random Effects
 
 Simulate some data;
 ```{r}
+library(nimbleEcology)
 set.seed(123)
 ## number of sites
 nLocs <- 5
@@ -152,9 +153,20 @@ laplace$calcLogLik(p = values(model, pars))
 
 claplace <- compileNimble(laplace, project = model)
 res <- runLaplace(claplace)
+
+## MLE
 res$summary$params
 
+## Get random effects
+res$summary$randomEffects
+
 values(cmodel, pars)
+
+## Just manually find MLE
+claplace$findMLE()
+
+## Find marginalized log likelihood
+claplace$calcLaplace(values(cmodel,pars))
 ```
 
 Some notes about NIMBLE Laplace
@@ -172,7 +184,7 @@ Some notes about NIMBLE Laplace
 
 ```{r, eval = FALSE}
 claplace$updateSettings(innerOptimMethod = "nlminb", useInnerCache = FALSE)
-fit.nlminb <- claplace$findMLE(method = "nlminb", hessian = FALSE)
+fit.nlminb <- claplace$findMLE(hessian = FALSE)
 fit.nlminb$par
 ```
 

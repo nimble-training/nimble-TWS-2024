@@ -1,5 +1,5 @@
 ---
-title: "Customizing models and MCMCs"
+title: "User Defined Distributions"
 subtitle: "TWS 2024 Workshop"
 author: "NIMBLE Development Team"
 date: "October 2024"
