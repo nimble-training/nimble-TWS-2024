@@ -57,7 +57,7 @@ linear_model_code <- nimbleCode({
 - `<-` declares a **deterministic node**.
 - `~` declares a **stochastic nodes**.
 - `dnorm` and `dunif` are for normal and uniform distributions.
-- *The order of the code does not matter!* `nimble` will figure out the order of calculations from seeing what depends on what. (This is called a *declarative* language; most languages are *imperative*, meaning the code is an ordered sequence of commans.)
+- *The order of the code does not matter!* `nimble` will figure out the order of calculations from seeing what depends on what. (This is called a *declarative* language; most languages are *imperative*, meaning the code is an ordered sequence of commands.)
 - One could instead use:
 
 ```{r, eval=FALSE}
